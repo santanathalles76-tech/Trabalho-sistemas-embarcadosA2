@@ -21,9 +21,10 @@ PREAMBULO = r"""\documentclass[12pt]{article}
 \usepackage[hidelinks]{hyperref}
 
 % Pasta de cada simulação no repositório do trabalho
-\newcommand{\simlink}[1]{\texttt{wokwi/#1}}
+\newcommand{\repositorio}{https://github.com/santanathalles76-tech/Trabalho-sistemas-embarcadosA2}
+\newcommand{\simlink}[1]{\href{\repositorio/tree/main/wokwi/#1}{\texttt{wokwi/#1}}}
 
-% Resultado de cada linha das tabelas de teste. Confira cada teste no Wokwi.
+% Resultado de cada linha das tabelas de teste (conferido pelos testes automatizados).
 \newcommand{\conf}{Conforme}
 
 % Insere a captura de tela se o arquivo já foi enviado; se não, mostra um
@@ -59,7 +60,7 @@ PREAMBULO = r"""\documentclass[12pt]{article}
 \sloppy
 
 \title{Escritório Inteligente: nove automações com Arduino Uno\\
-simuladas no Wokwi}
+para simulação no Wokwi}
 
 \author{Thalles da Silva Santana (matrícula 1240110579)}
 
@@ -80,7 +81,7 @@ SISTEMAS EMBARCADOS\par
 \vspace{0.5cm}
 Thalles da Silva Santana\\ 1240110579\par
 \vspace{4.2cm}
-{\fontsize{14}{17}\selectfont\bfseries ESCRITÓRIO INTELIGENTE:\\ NOVE AUTOMAÇÕES COM ARDUINO UNO\\ SIMULADAS NO WOKWI\par}
+{\fontsize{14}{17}\selectfont\bfseries ESCRITÓRIO INTELIGENTE:\\ NOVE AUTOMAÇÕES COM ARDUINO UNO\\ PARA SIMULAÇÃO NO WOKWI\par}
 \vspace{0.9cm}
 Trabalho opcional da A2 apresentado como artigo de\\ automação com sistemas embarcados\par
 \vspace{1.3cm}
@@ -94,11 +95,11 @@ Rio de Janeiro/RJ\\ 2026\par
 \maketitle
 
 \begin{abstract}
-This paper presents the simulated automation of a corporate office with nine embedded systems based on the Arduino Uno and simulated in Wokwi: access control, meeting room signage, occupancy-based air conditioning, server room monitoring, people counting, daylight harvesting, gas leak detection, water tank control and a reception queue with priority service. Each one reads sensors or buttons, applies decision logic, often a finite state machine, and drives LEDs, buzzers, servos, relays or displays. The programs were compiled for the ATmega328P and checked by 84 automated logic tests.
+This paper presents the simulated automation of a corporate office with nine embedded systems based on the Arduino Uno and designed for the Wokwi simulator: access control, meeting room signage, occupancy-based air conditioning, server room monitoring, people counting, daylight harvesting, gas leak detection, water tank control and a reception queue with priority service. Each one reads sensors or buttons, applies decision logic, often a finite state machine, and drives LEDs, buzzers, servos, relays or displays. The programs were compiled for the ATmega328P and checked by 84 automated logic tests.
 \end{abstract}
 
 \begin{resumo}
-Este artigo apresenta a automação simulada de um escritório corporativo com nove sistemas embarcados baseados no Arduino Uno e simulados no Wokwi: controle de acesso, sinalização da sala de reunião, ar-condicionado por ocupação, monitoramento da sala de servidores, contagem de pessoas, aproveitamento da luz natural, detecção de gás, controle do reservatório e painel de senhas com atendimento preferencial. Cada uma lê sensores ou botões, aplica uma lógica de decisão, muitas vezes uma máquina de estados, e aciona LEDs, buzzers, servos, relés ou displays. Os programas foram compilados para o ATmega328P e verificados por 84 testes automatizados de lógica.
+Este artigo apresenta a automação simulada de um escritório corporativo com nove sistemas embarcados baseados no Arduino Uno e projetados para o simulador Wokwi: controle de acesso, sinalização da sala de reunião, ar-condicionado por ocupação, monitoramento da sala de servidores, contagem de pessoas, aproveitamento da luz natural, detecção de gás, controle do reservatório e painel de senhas com atendimento preferencial. Cada uma lê sensores ou botões, aplica uma lógica de decisão, muitas vezes uma máquina de estados, e aciona LEDs, buzzers, servos, relés ou displays. Os programas foram compilados para o ATmega328P e verificados por 84 testes automatizados de lógica.
 \end{resumo}
 
 \noindent\textbf{Palavras-chave:} sistemas embarcados; Arduino; automação predial; escritório inteligente; Wokwi; máquina de estados.
@@ -111,7 +112,7 @@ Escritórios concentram desperdícios e riscos que passam despercebidos na rotin
 
 O ambiente escolhido para este trabalho é um \textbf{escritório corporativo} de médio porte, com recepção, área administrativa, salas de reunião, auditório para treinamentos, estações de trabalho, sala de servidores, copa e um reservatório de água próprio. O problema central é tornar esse ambiente mais seguro, econômico e organizado sem depender de supervisão humana constante.
 
-O objetivo é projetar, simular e testar \textbf{nove automações} para esse escritório, cada uma com ao menos uma entrada, uma saída e uma lógica de decisão própria. Todas foram desenvolvidas em C++ para o Arduino Uno e simuladas no Wokwi. A Seção~\ref{sec:referencial} apresenta os conceitos usados; a Seção~\ref{sec:metodologia}, as ferramentas e os componentes; a Seção~\ref{sec:automacoes} detalha as automações; a Seção~\ref{sec:resultados} discute os resultados e a integração entre elas; e a Seção~\ref{sec:conclusao} traz limitações e melhorias futuras. O código completo está nos apêndices.
+O objetivo é projetar, simular e testar \textbf{nove automações} para esse escritório, cada uma com ao menos uma entrada, uma saída e uma lógica de decisão própria. Todas foram desenvolvidas em C++ para o Arduino Uno, com projetos prontos para o simulador Wokwi. A Seção~\ref{sec:referencial} apresenta os conceitos usados; a Seção~\ref{sec:metodologia}, as ferramentas e os componentes; a Seção~\ref{sec:automacoes} detalha as automações; a Seção~\ref{sec:resultados} discute os resultados e a integração entre elas; e a Seção~\ref{sec:conclusao} traz limitações e melhorias futuras. O código completo está nos apêndices.
 
 \section{Referencial teórico}\label{sec:referencial}
 
@@ -133,13 +134,13 @@ O Arduino Uno é uma placa de desenvolvimento baseada no microcontrolador ATmega
 
 \subsection{Simulador, linguagem e placa}
 
-As automações foram simuladas no \textbf{Wokwi} \cite{wokwi2024}, simulador on-line que executa o código compilado do Arduino e oferece sensores interativos: durante a simulação é possível clicar no PIR, ajustar a temperatura do NTC e do DHT22, a luminosidade do LDR, a concentração de gás do MQ-2 e a distância do HC-SR04. A linguagem é C++ (Arduino) e a placa é o \textbf{Arduino Uno}. Cada automação é um projeto independente no Wokwi, com o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}) e a lista de bibliotecas (\texttt{libraries.txt}).
+As automações foram projetadas para o \textbf{Wokwi} \cite{wokwi2024}, simulador on-line que executa o código compilado do Arduino e oferece sensores interativos: durante a simulação é possível clicar no PIR, ajustar a temperatura do NTC e do DHT22, a luminosidade do LDR, a concentração de gás do MQ-2 e a distância do HC-SR04. A linguagem é C++ (Arduino) e a placa é o \textbf{Arduino Uno}. Cada automação é um projeto independente no Wokwi, com o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}) e a lista de bibliotecas (\texttt{libraries.txt}).
 
 Os tempos foram reduzidos para que os testes coubessem numa simulação, e cada programa indica o valor que seria usado na prática. Todos os programas usam \texttt{millis()} em vez de \texttt{delay()} para controlar o tempo, de modo que o laço principal continua lendo as entradas enquanto espera.
 
-\subsection{Verificação antes da simulação}
+\subsection{Verificação}
 
-Além dos testes no simulador, adotaram-se duas verificações complementares. Primeiro, cada programa foi compilado com o compilador \texttt{avr-gcc} e o núcleo oficial do Arduino para o ATmega328P, sem nenhum aviso de compilação; a Tabela~\ref{tab:memoria} mostra o uso de memória. Segundo, a lógica de decisão foi exercitada por \textbf{84 testes automatizados}, executados no computador com uma simulação mínima das funções do Arduino, que reproduzem as sequências de entrada descritas nas tabelas de teste da Seção~\ref{sec:automacoes}. Todos os testes passaram.
+A verificação foi feita em três etapas. Primeiro, cada programa foi compilado com o compilador \texttt{avr-gcc} e o núcleo oficial do Arduino para o ATmega328P, sem nenhum aviso de compilação; a Tabela~\ref{tab:memoria} mostra o uso de memória. Segundo, a lógica de decisão foi exercitada por \textbf{84 testes automatizados}, executados no computador com uma simulação mínima das funções do Arduino, que reproduzem as sequências de entrada descritas nas tabelas de teste da Seção~\ref{sec:automacoes}. Todos os testes passaram. Terceiro, os binários das Automações 2, 5 e 9 foram executados no avr8js, o emulador de código aberto do ATmega328P que serve de base ao Wokwi, com a sequência de botões e sensores aplicada aos pinos e a saída serial registrada, que coincidiu com a esperada.
 
 \begin{table}[!htb]
 \centering
@@ -187,7 +188,7 @@ Buzzer passivo & 6 & 1, 4, 5, 7, 8, 9 \\
 
 \subsection{Procedimento de teste}
 
-Para cada automação, montou-se uma tabela de entrada e saída com os casos normais, os limites (por exemplo, o valor exato em que a bomba liga) e as situações de falha (sensor sem resposta, senha errada repetida, lotação esgotada). Cada caso foi executado no Wokwi, e as saídas foram observadas nos LEDs, no display, na posição dos servos e no monitor serial, onde os programas registram cada decisão.
+Para cada automação, montou-se uma tabela de entrada e saída com os casos normais, os limites (por exemplo, o valor exato em que a bomba liga) e as situações de falha (sensor sem resposta, senha errada repetida, lotação esgotada). Cada caso foi reproduzido nos testes automatizados, que conferem o estado dos LEDs, o texto do display, a posição dos servos, os relés e o buzzer. Os mesmos casos podem ser repetidos no Wokwi, onde o monitor serial registra cada decisão do programa.
 
 \section{Automações}\label{sec:automacoes}
 
@@ -218,7 +219,7 @@ As nove automações se distribuem pelo escritório conforme a Tabela~\ref{tab:m
 RESTO = r"""
 \section{Resultados e discussão}\label{sec:resultados}
 
-As nove automações funcionaram como descrito: todos os casos das tabelas de teste produziram as saídas esperadas no simulador, os 84 testes automatizados de lógica passaram e os programas compilaram para o ATmega328P sem avisos, usando no máximo 40\% da memória flash e 40\% da SRAM (Tabela~\ref{tab:memoria}). Há, portanto, folga para recursos futuros, como comunicação em rede.
+As nove automações funcionaram como descrito: todos os casos das tabelas de teste produziram as saídas esperadas nos 84 testes automatizados de lógica, as execuções no emulador AVR coincidiram com o esperado e os programas compilaram para o ATmega328P sem avisos, usando no máximo 40\% da memória flash e 40\% da SRAM (Tabela~\ref{tab:memoria}). Há, portanto, folga para recursos futuros, como comunicação em rede.
 
 \subsection{Dificuldades}
 
@@ -287,9 +288,9 @@ Pino do Arduino & Ligado a \\
 \end{{tabularx}}
 \end{{table}}
 
-\paragraph{{Esquema do circuito.}} A Figura~\ref{{fig:circ{n}}} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{{{a['pasta']}}} do repositório (Apêndice~\ref{{ap:executar}}).
+\paragraph{{Esquema do circuito.}} A Figura~\ref{{fig:circ{n}}} mostra o circuito, desenhado a partir do arquivo \texttt{{diagram.json}} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{{{a['pasta']}}} do repositório (Apêndice~\ref{{ap:executar}}).
 
-\captura{{circuito{n}.png}}{{Circuito da Automação {n} no Wokwi}}{{fig:circ{n}}}
+\captura{{figuras/circuito{n}.png}}{{Esquema do circuito da Automação {n}}}{{fig:circ{n}}}
 
 \paragraph{{Lógica.}} {a['logica']} O pseudocódigo resume a decisão:
 
@@ -297,7 +298,7 @@ Pino do Arduino & Ligado a \\
 {a['pseudo']}
 \end{{lstlisting}}
 
-\paragraph{{Testes.}} A Tabela~\ref{{tab:teste{n}}} reúne os casos executados, e a Figura~\ref{{fig:teste{n}}} mostra um deles na simulação.
+\paragraph{{Testes.}} A Tabela~\ref{{tab:teste{n}}} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{{table}}[!htb]
 \centering
@@ -312,7 +313,7 @@ Pino do Arduino & Ligado a \\
 \end{{tabularx}}
 \end{{table}}
 
-\captura{{teste{n}.png}}{{Automação {n}: {a['captura']}}}{{fig:teste{n}}}
+
 """
 
 
@@ -348,7 +349,11 @@ def main():
     corpo += r"""
 \section{Como executar as simulações}\label{ap:executar}
 
-Os nove projetos estão no repositório público deste trabalho no GitHub, na pasta \texttt{wokwi/}, uma subpasta por automação (\texttt{a1-controle-acesso} a \texttt{a9-painel-senhas}). Cada subpasta contém o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}), as bibliotecas (\texttt{libraries.txt}), o firmware já compilado (\texttt{sketch.hex} e \texttt{sketch.elf}) e o arquivo de configuração \texttt{wokwi.toml}. O arquivo \texttt{README.md} do repositório repete estas instruções.
+Os nove projetos estão no repositório público deste trabalho no GitHub:
+
+\begin{center}\url{https://github.com/santanathalles76-tech/Trabalho-sistemas-embarcadosA2}\end{center}
+
+\noindent Eles ficam na pasta \texttt{wokwi/}, uma subpasta por automação (\texttt{a1-controle-acesso} a \texttt{a9-painel-senhas}). Cada subpasta contém o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}), as bibliotecas (\texttt{libraries.txt}), o firmware já compilado (\texttt{sketch.hex} e \texttt{sketch.elf}) e o arquivo de configuração \texttt{wokwi.toml}. O arquivo \texttt{README.md} do repositório repete estas instruções.
 
 \paragraph{No navegador.} Em \url{https://wokwi.com}, crie um projeto \emph{Arduino Uno}, cole o conteúdo de \texttt{sketch.ino}, \texttt{diagram.json} e \texttt{libraries.txt} nas abas de mesmo nome e clique no botão verde de iniciar.
 

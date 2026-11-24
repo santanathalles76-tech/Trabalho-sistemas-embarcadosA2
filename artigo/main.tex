@@ -13,9 +13,10 @@
 \usepackage[hidelinks]{hyperref}
 
 % Pasta de cada simulação no repositório do trabalho
-\newcommand{\simlink}[1]{\texttt{wokwi/#1}}
+\newcommand{\repositorio}{https://github.com/santanathalles76-tech/Trabalho-sistemas-embarcadosA2}
+\newcommand{\simlink}[1]{\href{\repositorio/tree/main/wokwi/#1}{\texttt{wokwi/#1}}}
 
-% Resultado de cada linha das tabelas de teste. Confira cada teste no Wokwi.
+% Resultado de cada linha das tabelas de teste (conferido pelos testes automatizados).
 \newcommand{\conf}{Conforme}
 
 % Insere a captura de tela se o arquivo já foi enviado; se não, mostra um
@@ -51,7 +52,7 @@
 \sloppy
 
 \title{Escritório Inteligente: nove automações com Arduino Uno\\
-simuladas no Wokwi}
+para simulação no Wokwi}
 
 \author{Thalles da Silva Santana (matrícula 1240110579)}
 
@@ -72,7 +73,7 @@ SISTEMAS EMBARCADOS\par
 \vspace{0.5cm}
 Thalles da Silva Santana\\ 1240110579\par
 \vspace{4.2cm}
-{\fontsize{14}{17}\selectfont\bfseries ESCRITÓRIO INTELIGENTE:\\ NOVE AUTOMAÇÕES COM ARDUINO UNO\\ SIMULADAS NO WOKWI\par}
+{\fontsize{14}{17}\selectfont\bfseries ESCRITÓRIO INTELIGENTE:\\ NOVE AUTOMAÇÕES COM ARDUINO UNO\\ PARA SIMULAÇÃO NO WOKWI\par}
 \vspace{0.9cm}
 Trabalho opcional da A2 apresentado como artigo de\\ automação com sistemas embarcados\par
 \vspace{1.3cm}
@@ -86,11 +87,11 @@ Rio de Janeiro/RJ\\ 2026\par
 \maketitle
 
 \begin{abstract}
-This paper presents the simulated automation of a corporate office with nine embedded systems based on the Arduino Uno and simulated in Wokwi: access control, meeting room signage, occupancy-based air conditioning, server room monitoring, people counting, daylight harvesting, gas leak detection, water tank control and a reception queue with priority service. Each one reads sensors or buttons, applies decision logic, often a finite state machine, and drives LEDs, buzzers, servos, relays or displays. The programs were compiled for the ATmega328P and checked by 84 automated logic tests.
+This paper presents the simulated automation of a corporate office with nine embedded systems based on the Arduino Uno and designed for the Wokwi simulator: access control, meeting room signage, occupancy-based air conditioning, server room monitoring, people counting, daylight harvesting, gas leak detection, water tank control and a reception queue with priority service. Each one reads sensors or buttons, applies decision logic, often a finite state machine, and drives LEDs, buzzers, servos, relays or displays. The programs were compiled for the ATmega328P and checked by 84 automated logic tests.
 \end{abstract}
 
 \begin{resumo}
-Este artigo apresenta a automação simulada de um escritório corporativo com nove sistemas embarcados baseados no Arduino Uno e simulados no Wokwi: controle de acesso, sinalização da sala de reunião, ar-condicionado por ocupação, monitoramento da sala de servidores, contagem de pessoas, aproveitamento da luz natural, detecção de gás, controle do reservatório e painel de senhas com atendimento preferencial. Cada uma lê sensores ou botões, aplica uma lógica de decisão, muitas vezes uma máquina de estados, e aciona LEDs, buzzers, servos, relés ou displays. Os programas foram compilados para o ATmega328P e verificados por 84 testes automatizados de lógica.
+Este artigo apresenta a automação simulada de um escritório corporativo com nove sistemas embarcados baseados no Arduino Uno e projetados para o simulador Wokwi: controle de acesso, sinalização da sala de reunião, ar-condicionado por ocupação, monitoramento da sala de servidores, contagem de pessoas, aproveitamento da luz natural, detecção de gás, controle do reservatório e painel de senhas com atendimento preferencial. Cada uma lê sensores ou botões, aplica uma lógica de decisão, muitas vezes uma máquina de estados, e aciona LEDs, buzzers, servos, relés ou displays. Os programas foram compilados para o ATmega328P e verificados por 84 testes automatizados de lógica.
 \end{resumo}
 
 \noindent\textbf{Palavras-chave:} sistemas embarcados; Arduino; automação predial; escritório inteligente; Wokwi; máquina de estados.
@@ -101,7 +102,7 @@ Escritórios concentram desperdícios e riscos que passam despercebidos na rotin
 
 O ambiente escolhido para este trabalho é um \textbf{escritório corporativo} de médio porte, com recepção, área administrativa, salas de reunião, auditório para treinamentos, estações de trabalho, sala de servidores, copa e um reservatório de água próprio. O problema central é tornar esse ambiente mais seguro, econômico e organizado sem depender de supervisão humana constante.
 
-O objetivo é projetar, simular e testar \textbf{nove automações} para esse escritório, cada uma com ao menos uma entrada, uma saída e uma lógica de decisão própria. Todas foram desenvolvidas em C++ para o Arduino Uno e simuladas no Wokwi. A Seção~\ref{sec:referencial} apresenta os conceitos usados; a Seção~\ref{sec:metodologia}, as ferramentas e os componentes; a Seção~\ref{sec:automacoes} detalha as automações; a Seção~\ref{sec:resultados} discute os resultados e a integração entre elas; e a Seção~\ref{sec:conclusao} traz limitações e melhorias futuras. O código completo está nos apêndices.
+O objetivo é projetar, simular e testar \textbf{nove automações} para esse escritório, cada uma com ao menos uma entrada, uma saída e uma lógica de decisão própria. Todas foram desenvolvidas em C++ para o Arduino Uno, com projetos prontos para o simulador Wokwi. A Seção~\ref{sec:referencial} apresenta os conceitos usados; a Seção~\ref{sec:metodologia}, as ferramentas e os componentes; a Seção~\ref{sec:automacoes} detalha as automações; a Seção~\ref{sec:resultados} discute os resultados e a integração entre elas; e a Seção~\ref{sec:conclusao} traz limitações e melhorias futuras. O código completo está nos apêndices.
 
 \section{Referencial teórico}\label{sec:referencial}
 
@@ -123,13 +124,13 @@ O Arduino Uno é uma placa de desenvolvimento baseada no microcontrolador ATmega
 
 \subsection{Simulador, linguagem e placa}
 
-As automações foram simuladas no \textbf{Wokwi} \cite{wokwi2024}, simulador on-line que executa o código compilado do Arduino e oferece sensores interativos: durante a simulação é possível clicar no PIR, ajustar a temperatura do NTC e do DHT22, a luminosidade do LDR, a concentração de gás do MQ-2 e a distância do HC-SR04. A linguagem é C++ (Arduino) e a placa é o \textbf{Arduino Uno}. Cada automação é um projeto independente no Wokwi, com o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}) e a lista de bibliotecas (\texttt{libraries.txt}).
+As automações foram projetadas para o \textbf{Wokwi} \cite{wokwi2024}, simulador on-line que executa o código compilado do Arduino e oferece sensores interativos: durante a simulação é possível clicar no PIR, ajustar a temperatura do NTC e do DHT22, a luminosidade do LDR, a concentração de gás do MQ-2 e a distância do HC-SR04. A linguagem é C++ (Arduino) e a placa é o \textbf{Arduino Uno}. Cada automação é um projeto independente no Wokwi, com o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}) e a lista de bibliotecas (\texttt{libraries.txt}).
 
 Os tempos foram reduzidos para que os testes coubessem numa simulação, e cada programa indica o valor que seria usado na prática. Todos os programas usam \texttt{millis()} em vez de \texttt{delay()} para controlar o tempo, de modo que o laço principal continua lendo as entradas enquanto espera.
 
-\subsection{Verificação antes da simulação}
+\subsection{Verificação}
 
-Além dos testes no simulador, adotaram-se duas verificações complementares. Primeiro, cada programa foi compilado com o compilador \texttt{avr-gcc} e o núcleo oficial do Arduino para o ATmega328P, sem nenhum aviso de compilação; a Tabela~\ref{tab:memoria} mostra o uso de memória. Segundo, a lógica de decisão foi exercitada por \textbf{84 testes automatizados}, executados no computador com uma simulação mínima das funções do Arduino, que reproduzem as sequências de entrada descritas nas tabelas de teste da Seção~\ref{sec:automacoes}. Todos os testes passaram.
+A verificação foi feita em três etapas. Primeiro, cada programa foi compilado com o compilador \texttt{avr-gcc} e o núcleo oficial do Arduino para o ATmega328P, sem nenhum aviso de compilação; a Tabela~\ref{tab:memoria} mostra o uso de memória. Segundo, a lógica de decisão foi exercitada por \textbf{84 testes automatizados}, executados no computador com uma simulação mínima das funções do Arduino, que reproduzem as sequências de entrada descritas nas tabelas de teste da Seção~\ref{sec:automacoes}. Todos os testes passaram. Terceiro, os binários das Automações 2, 5 e 9 foram executados no avr8js, o emulador de código aberto do ATmega328P que serve de base ao Wokwi, com a sequência de botões e sensores aplicada aos pinos e a saída serial registrada, que coincidiu com a esperada.
 
 \begin{table}[!htb]
 \centering
@@ -185,7 +186,7 @@ Buzzer passivo & 6 & 1, 4, 5, 7, 8, 9 \\
 
 \subsection{Procedimento de teste}
 
-Para cada automação, montou-se uma tabela de entrada e saída com os casos normais, os limites (por exemplo, o valor exato em que a bomba liga) e as situações de falha (sensor sem resposta, senha errada repetida, lotação esgotada). Cada caso foi executado no Wokwi, e as saídas foram observadas nos LEDs, no display, na posição dos servos e no monitor serial, onde os programas registram cada decisão.
+Para cada automação, montou-se uma tabela de entrada e saída com os casos normais, os limites (por exemplo, o valor exato em que a bomba liga) e as situações de falha (sensor sem resposta, senha errada repetida, lotação esgotada). Cada caso foi reproduzido nos testes automatizados, que conferem o estado dos LEDs, o texto do display, a posição dos servos, os relés e o buzzer. Os mesmos casos podem ser repetidos no Wokwi, onde o monitor serial registra cada decisão do programa.
 
 \section{Automações}\label{sec:automacoes}
 
@@ -254,9 +255,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ1} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a1-controle-acesso} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ1} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a1-controle-acesso} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito1.png}{Circuito da Automação 1 no Wokwi}{fig:circ1}
+\captura{figuras/circuito1.png}{Esquema do circuito da Automação 1}{fig:circ1}
 
 \paragraph{Lógica.} O comportamento é uma máquina de três estados: \textsc{Aguardando}, \textsc{Liberado} e \textsc{Bloqueado}. Os dígitos ficam num vetor de até seis posições e aparecem mascarados no visor. A tecla \texttt{\#} confirma e a tecla \texttt{*} apaga. Toda a temporização usa \texttt{millis()}, sem travar o laço principal. O pseudocódigo resume a decisão:
 
@@ -277,7 +278,7 @@ repita para sempre:
     se passaram 15 s: erros <- 0; estado <- AGUARDANDO
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste1} reúne os casos executados, e a Figura~\ref{fig:teste1} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste1} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -301,7 +302,7 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste1.png}{Automação 1: Teclado bloqueado depois de três senhas erradas}{fig:teste1}
+
 
 \subsection{Automação 2: Sala de reunião com aviso de ocupação}\label{sub:a2}
 
@@ -341,9 +342,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ2} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a2-sala-reuniao} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ2} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a2-sala-reuniao} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito2.png}{Circuito da Automação 2 no Wokwi}{fig:circ2}
+\captura{figuras/circuito2.png}{Esquema do circuito da Automação 2}{fig:circ2}
 
 \paragraph{Lógica.} Máquina de três estados (\textsc{Livre}, \textsc{Reservada} e \textsc{Ocupada}). O botão é lido com \emph{debounce} de 50 ms e detecção de borda, de modo que cada aperto conta uma vez só. Os tempos foram reduzidos para a simulação: 20 s de tolerância para o check-in e 15 s sem movimento para liberar a sala (na prática, 10 e 5 minutos). O pseudocódigo resume a decisão:
 
@@ -362,7 +363,7 @@ repita para sempre:
   acender somente o LED do estado atual
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste2} reúne os casos executados, e a Figura~\ref{fig:teste2} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste2} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -385,7 +386,7 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste2.png}{Automação 2: Sala reservada aguardando o check-in}{fig:teste2}
+
 
 \subsection{Automação 3: Ar-condicionado por ocupação e temperatura}\label{sub:a3}
 
@@ -427,9 +428,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ3} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a3-ar-condicionado} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ3} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a3-ar-condicionado} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito3.png}{Circuito da Automação 3 no Wokwi}{fig:circ3}
+\captura{figuras/circuito3.png}{Esquema do circuito da Automação 3}{fig:circ3}
 
 \paragraph{Lógica.} A temperatura vem da equação Beta do termistor ($\beta = 3950$). O potenciômetro define a temperatura desejada $T_d$ entre 18 e 28 $^\circ$C, em passos de 0,5 $^\circ$C. A sala é considerada ocupada se houve movimento nos últimos 20 s. O compressor liga quando $T \geq T_d + 1$ e desliga quando $T \leq T_d - 1$ ou quando a sala fica vazia. Entre duas mudanças do relé há pelo menos 5 s (na prática, 3 minutos). O pseudocódigo resume a decisão:
 
@@ -448,7 +449,7 @@ repita para sempre:
   a cada 0,5 s: mostrar T, Td, ocupação e estado no LCD
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste3} reúne os casos executados, e a Figura~\ref{fig:teste3} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste3} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -470,7 +471,7 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste3.png}{Automação 3: Compressor ligado com a sala ocupada}{fig:teste3}
+
 
 \subsection{Automação 4: Monitoramento da sala de servidores}\label{sub:a4}
 
@@ -514,9 +515,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ4} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a4-sala-servidores} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ4} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a4-sala-servidores} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito4.png}{Circuito da Automação 4 no Wokwi}{fig:circ4}
+\captura{figuras/circuito4.png}{Esquema do circuito da Automação 4}{fig:circ4}
 
 \paragraph{Lógica.} O DHT22 é lido a cada 2 s, o intervalo mínimo do sensor. O nível é \textsc{Normal} entre 18 e 27 $^\circ$C com umidade de 20 a 80\%; \textsc{Atenção} fora dessas faixas ou se o sensor não responder; e \textsc{Crítico} acima de 32 $^\circ$C. A ventilação liga no nível crítico e só desliga abaixo de 30 $^\circ$C. O botão silencia o alarme atual, e uma nova piora faz o buzzer voltar a tocar. O pseudocódigo resume a decisão:
 
@@ -537,7 +538,7 @@ sempre:
   buzzer intermitente (0,5 s) se nível = CRÍTICO e não silenciado
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste4} reúne os casos executados, e a Figura~\ref{fig:teste4} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste4} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -560,7 +561,7 @@ sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste4.png}{Automação 4: Nível crítico com ventilação de emergência ligada}{fig:teste4}
+
 
 \subsection{Automação 5: Contador de pessoas e controle de lotação do auditório}\label{sub:a5}
 
@@ -604,9 +605,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ5} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a5-controle-lotacao} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ5} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a5-controle-lotacao} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito5.png}{Circuito da Automação 5 no Wokwi}{fig:circ5}
+\captura{figuras/circuito5.png}{Esquema do circuito da Automação 5}{fig:circ5}
 
 \paragraph{Lógica.} Os dois botões representam os sensores da catraca e usam uma estrutura comum de \emph{debounce}. A capacidade foi reduzida para 8 pessoas na simulação. A entrada só é liberada se houver vaga; a saída nunca deixa o contador negativo. O LED muda de verde para amarelo a partir de 80\% da capacidade e para vermelho quando lota. O pseudocódigo resume a decisão:
 
@@ -622,7 +623,7 @@ repita para sempre:
   se a catraca está aberta há 2 s: travar catraca
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste5} reúne os casos executados, e a Figura~\ref{fig:teste5} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste5} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -644,7 +645,7 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste5.png}{Automação 5: Auditório lotado com a catraca travada}{fig:teste5}
+
 
 \subsection{Automação 6: Iluminação com aproveitamento da luz natural}\label{sub:a6}
 
@@ -682,9 +683,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ6} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a6-iluminacao-natural} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ6} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a6-iluminacao-natural} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito6.png}{Circuito da Automação 6 no Wokwi}{fig:circ6}
+\captura{figuras/circuito6.png}{Esquema do circuito da Automação 6}{fig:circ6}
 
 \paragraph{Lógica.} A leitura do LDR é convertida em lux pela curva do componente ($\gamma = 0{,}7$; 50 k$\Omega$ a 10 lux). Uma média móvel exponencial (peso 0,2 para a leitura nova) evita que uma nuvem ou a sombra de uma pessoa mude a luz de repente. A potência é proporcional ao que falta para 500 lux, e uma faixa morta de 5 passos de PWM (cerca de 2\%) impede que a luminária oscile. O pseudocódigo resume a decisão:
 
@@ -699,7 +700,7 @@ a cada 100 ms:
   a cada 0,5 s: mostrar lux e percentual no LCD
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste6} reúne os casos executados, e a Figura~\ref{fig:teste6} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste6} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -719,7 +720,7 @@ a cada 100 ms:
 \end{tabularx}
 \end{table}
 
-\captura{teste6.png}{Automação 6: Luminária complementando a luz natural}{fig:teste6}
+
 
 \subsection{Automação 7: Detecção de vazamento de gás na copa}\label{sub:a7}
 
@@ -764,9 +765,9 @@ D9 & LED vermelho \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ7} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a7-vazamento-gas} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ7} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a7-vazamento-gas} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito7.png}{Circuito da Automação 7 no Wokwi}{fig:circ7}
+\captura{figuras/circuito7.png}{Esquema do circuito da Automação 7}{fig:circ7}
 
 \paragraph{Lógica.} Como o simulador não informa a curva de conversão do MQ-2 para ppm, o sistema mede o ar limpo nos primeiros 3 s e usa essa média como linha de base. O alarme dispara se a leitura passar da linha de base mais 150 ou se a saída digital do módulo for a nível baixo, o que dá redundância. O alarme fica travado (\emph{latch}): o rearme só é aceito com o gás abaixo da linha de base mais 75. O pseudocódigo resume a decisão:
 
@@ -784,7 +785,7 @@ repita para sempre:
               senão: recusar rearme
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste7} reúne os casos executados, e a Figura~\ref{fig:teste7} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste7} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -805,7 +806,7 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste7.png}{Automação 7: Alarme de gás com válvula fechada e exaustor ligado}{fig:teste7}
+
 
 \subsection{Automação 8: Nível do reservatório e bomba de recalque}\label{sub:a8}
 
@@ -847,9 +848,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ8} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a8-reservatorio-agua} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ8} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a8-reservatorio-agua} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito8.png}{Circuito da Automação 8 no Wokwi}{fig:circ8}
+\captura{figuras/circuito8.png}{Esquema do circuito da Automação 8}{fig:circ8}
 
 \paragraph{Lógica.} A distância até a água é a mediana de três medidas, o que descarta um eco espúrio. Com o sensor na tampa, 20 cm correspondem a 100\% e 220 cm a 0\%. A bomba liga abaixo de 25\% e desliga ao chegar a 90\%; entre esses valores mantém o estado anterior. Abaixo de 10\% há bipe de reserva crítica. Sem eco, a bomba é bloqueada. O pseudocódigo resume a decisão:
 
@@ -865,7 +866,7 @@ a cada 0,5 s:
   acender os LEDs da barra até o nível; mostrar nível e bomba no LCD
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste8} reúne os casos executados, e a Figura~\ref{fig:teste8} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste8} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -886,7 +887,7 @@ a cada 0,5 s:
 \end{tabularx}
 \end{table}
 
-\captura{teste8.png}{Automação 8: Bomba ligada enchendo o reservatório}{fig:teste8}
+
 
 \subsection{Automação 9: Painel de senhas da recepção com atendimento preferencial}\label{sub:a9}
 
@@ -926,9 +927,9 @@ A4 / A5 & SDA / SCL do LCD \\
 \end{tabularx}
 \end{table}
 
-\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ9} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a9-painel-senhas} do repositório (Apêndice~\ref{ap:executar}).
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ9} mostra o circuito, desenhado a partir do arquivo \texttt{diagram.json} do projeto com as mesmas peças do Wokwi. O projeto completo da simulação está na pasta \simlink{a9-painel-senhas} do repositório (Apêndice~\ref{ap:executar}).
 
-\captura{circuito9.png}{Circuito da Automação 9 no Wokwi}{fig:circ9}
+\captura{figuras/circuito9.png}{Esquema do circuito da Automação 9}{fig:circ9}
 
 \paragraph{Lógica.} Cada fila é controlada por dois contadores, de senhas emitidas e de senhas chamadas; quem aguarda é a diferença entre eles. A fila preferencial tem prioridade, mas depois de duas preferenciais seguidas o sistema chama uma normal, se houver alguém esperando. Essa regra evita que a fila normal fique parada indefinidamente. O pseudocódigo resume a decisão:
 
@@ -945,7 +946,7 @@ repita para sempre:
   mostrar última senha chamada e o tamanho das filas no LCD
 \end{lstlisting}
 
-\paragraph{Testes.} A Tabela~\ref{tab:teste9} reúne os casos executados, e a Figura~\ref{fig:teste9} mostra um deles na simulação.
+\paragraph{Testes.} A Tabela~\ref{tab:teste9} reúne os casos de teste com as entradas aplicadas e as saídas obtidas.
 
 \begin{table}[!htb]
 \centering
@@ -965,11 +966,11 @@ repita para sempre:
 \end{tabularx}
 \end{table}
 
-\captura{teste9.png}{Automação 9: Painel chamando a próxima senha}{fig:teste9}
+
 
 \section{Resultados e discussão}\label{sec:resultados}
 
-As nove automações funcionaram como descrito: todos os casos das tabelas de teste produziram as saídas esperadas no simulador, os 84 testes automatizados de lógica passaram e os programas compilaram para o ATmega328P sem avisos, usando no máximo 40\% da memória flash e 40\% da SRAM (Tabela~\ref{tab:memoria}). Há, portanto, folga para recursos futuros, como comunicação em rede.
+As nove automações funcionaram como descrito: todos os casos das tabelas de teste produziram as saídas esperadas nos 84 testes automatizados de lógica, as execuções no emulador AVR coincidiram com o esperado e os programas compilaram para o ATmega328P sem avisos, usando no máximo 40\% da memória flash e 40\% da SRAM (Tabela~\ref{tab:memoria}). Há, portanto, folga para recursos futuros, como comunicação em rede.
 
 \subsection{Dificuldades}
 
@@ -1002,7 +1003,11 @@ O trabalho mostrou que um único microcontrolador de 8 bits, com componentes de 
 
 \section{Como executar as simulações}\label{ap:executar}
 
-Os nove projetos estão no repositório público deste trabalho no GitHub, na pasta \texttt{wokwi/}, uma subpasta por automação (\texttt{a1-controle-acesso} a \texttt{a9-painel-senhas}). Cada subpasta contém o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}), as bibliotecas (\texttt{libraries.txt}), o firmware já compilado (\texttt{sketch.hex} e \texttt{sketch.elf}) e o arquivo de configuração \texttt{wokwi.toml}. O arquivo \texttt{README.md} do repositório repete estas instruções.
+Os nove projetos estão no repositório público deste trabalho no GitHub:
+
+\begin{center}\url{https://github.com/santanathalles76-tech/Trabalho-sistemas-embarcadosA2}\end{center}
+
+\noindent Eles ficam na pasta \texttt{wokwi/}, uma subpasta por automação (\texttt{a1-controle-acesso} a \texttt{a9-painel-senhas}). Cada subpasta contém o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}), as bibliotecas (\texttt{libraries.txt}), o firmware já compilado (\texttt{sketch.hex} e \texttt{sketch.elf}) e o arquivo de configuração \texttt{wokwi.toml}. O arquivo \texttt{README.md} do repositório repete estas instruções.
 
 \paragraph{No navegador.} Em \url{https://wokwi.com}, crie um projeto \emph{Arduino Uno}, cole o conteúdo de \texttt{sketch.ino}, \texttt{diagram.json} e \texttt{libraries.txt} nas abas de mesmo nome e clique no botão verde de iniciar.
 

@@ -80,4 +80,4 @@ Os testes de lógica rodam o próprio `sketch.ino` de cada automação no comput
 
 ## Artigo
 
-O artigo completo, com o código no apêndice, está em `artigo/`. Para compilar, use o Overleaf ou `latexmk -pdf main.tex` dentro da pasta.
+O artigo completo, com o código no apêndice, está em [`artigo/Trabalho_A2_Sistemas_Embarcados_Thalles_Santana.pdf`](artigo/Trabalho_A2_Sistemas_Embarcados_Thalles_Santana.pdf); o código-fonte LaTeX também está em `artigo/`. Para compilar, use o Overleaf ou `latexmk -pdf main.tex` dentro da pasta.
