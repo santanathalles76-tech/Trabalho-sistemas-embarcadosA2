@@ -1,0 +1,4 @@
+# Bibliotecas usadas por esta automação (o Wokwi instala sozinho)
+LiquidCrystal I2C
+Keypad
+Servo

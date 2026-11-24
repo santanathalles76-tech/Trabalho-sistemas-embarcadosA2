@@ -1,0 +1,6 @@
+{
+  "name": "escritorio-inteligente-testes",
+  "private": true,
+  "description": "Emulação do binário AVR com avr8js (o mesmo núcleo usado pelo Wokwi)",
+  "dependencies": { "avr8js": "0.20.1" }
+}

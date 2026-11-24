@@ -1,0 +1,2475 @@
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+
+% Pasta de cada simulação no repositório do trabalho
+\newcommand{\simlink}[1]{\texttt{wokwi/#1}}
+
+% Resultado de cada linha das tabelas de teste. Confira cada teste no Wokwi.
+\newcommand{\conf}{Conforme}
+
+% Insere a captura de tela se o arquivo já foi enviado; se não, mostra um
+% quadro indicando qual imagem falta (assim o PDF compila em qualquer etapa).
+\newcommand{\captura}[3]{%
+  \begin{figure}[!htb]
+  \centering
+  \IfFileExists{#1}{\includegraphics[width=.85\textwidth]{#1}}{%
+    \fbox{\parbox[c][4.2cm][c]{.8\textwidth}{\centering\small\sffamily
+      Inserir captura de tela: \texttt{#1}\\[4pt] #2}}}
+  \caption{#2}
+  \label{#3}
+  \end{figure}}
+
+% Código-fonte com acentos (o listings não lê UTF-8 sozinho)
+\definecolor{comentario}{RGB}{90,110,90}
+\definecolor{palavra}{RGB}{20,60,140}
+\definecolor{texto}{RGB}{150,60,30}
+\lstset{
+  basicstyle=\ttfamily\scriptsize, breaklines=true, columns=fullflexible,
+  keepspaces=true, showstringspaces=false, frame=single, rulecolor=\color{black!30},
+  numbers=left, numberstyle=\tiny\color{black!50}, numbersep=6pt, xleftmargin=1.5em,
+  commentstyle=\color{comentario}\itshape, keywordstyle=\color{palavra}\bfseries,
+  stringstyle=\color{texto},
+  literate={á}{{\'a}}1 {à}{{\`a}}1 {â}{{\^a}}1 {ã}{{\~a}}1 {é}{{\'e}}1 {ê}{{\^e}}1
+           {í}{{\'i}}1 {ó}{{\'o}}1 {ô}{{\^o}}1 {õ}{{\~o}}1 {ú}{{\'u}}1 {ç}{{\c{c}}}1
+           {Á}{{\'A}}1 {Ã}{{\~A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ç}{{\c{C}}}1
+           {°}{{\textdegree}}1 {µ}{{$\mu$}}1 {Ω}{{$\Omega$}}1
+}
+\lstdefinestyle{pseudo}{language={}, numbers=none, xleftmargin=0pt,
+  basicstyle=\ttfamily\footnotesize, frame=lines}
+
+\sloppy
+
+\title{Escritório Inteligente: nove automações com Arduino Uno\\
+simuladas no Wokwi}
+
+\author{Thalles da Silva Santana (matrícula 1240110579)}
+
+\address{Ciência da Computação, Universidade Veiga de Almeida (UVA)\\
+  Disciplina de Sistemas Embarcados, Prof. Caio Silva Azeredo\\
+  Rio de Janeiro, RJ, Brasil}
+
+\begin{document}
+
+% ============================ CAPA ====================================
+\begin{titlepage}
+\centering\sffamily\fontsize{12}{14.5}\selectfont
+\vspace*{1.2cm}
+\includegraphics[width=3.2cm]{logo-uva.jpg}\par
+\vspace{0.5cm}
+{\bfseries UNIVERSIDADE VEIGA DE ALMEIDA\\ CIÊNCIA DA COMPUTAÇÃO}\\
+SISTEMAS EMBARCADOS\par
+\vspace{0.5cm}
+Thalles da Silva Santana\\ 1240110579\par
+\vspace{4.2cm}
+{\fontsize{14}{17}\selectfont\bfseries ESCRITÓRIO INTELIGENTE:\\ NOVE AUTOMAÇÕES COM ARDUINO UNO\\ SIMULADAS NO WOKWI\par}
+\vspace{0.9cm}
+Trabalho opcional da A2 apresentado como artigo de\\ automação com sistemas embarcados\par
+\vspace{1.3cm}
+Orientador: Prof. Caio Silva Azeredo\par
+\vfill
+Rio de Janeiro/RJ\\ 2026\par
+\vspace*{1.5cm}
+\end{titlepage}
+\setcounter{page}{1}
+
+\maketitle
+
+\begin{abstract}
+This paper presents the simulated automation of a corporate office with nine embedded systems based on the Arduino Uno and simulated in Wokwi: access control, meeting room signage, occupancy-based air conditioning, server room monitoring, people counting, daylight harvesting, gas leak detection, water tank control and a reception queue with priority service. Each one reads sensors or buttons, applies decision logic, often a finite state machine, and drives LEDs, buzzers, servos, relays or displays. The programs were compiled for the ATmega328P and checked by 84 automated logic tests.
+\end{abstract}
+
+\begin{resumo}
+Este artigo apresenta a automação simulada de um escritório corporativo com nove sistemas embarcados baseados no Arduino Uno e simulados no Wokwi: controle de acesso, sinalização da sala de reunião, ar-condicionado por ocupação, monitoramento da sala de servidores, contagem de pessoas, aproveitamento da luz natural, detecção de gás, controle do reservatório e painel de senhas com atendimento preferencial. Cada uma lê sensores ou botões, aplica uma lógica de decisão, muitas vezes uma máquina de estados, e aciona LEDs, buzzers, servos, relés ou displays. Os programas foram compilados para o ATmega328P e verificados por 84 testes automatizados de lógica.
+\end{resumo}
+
+\noindent\textbf{Palavras-chave:} sistemas embarcados; Arduino; automação predial; escritório inteligente; Wokwi; máquina de estados.
+
+\section{Introdução}
+
+Escritórios concentram desperdícios e riscos que passam despercebidos na rotina: o ar-condicionado ligado em sala vazia, luminárias acesas com o sol entrando pela janela, salas de reunião reservadas e não usadas, portas controladas por chave física e equipamentos críticos sem monitoramento fora do expediente. Sistemas embarcados de baixo custo permitem tratar esses problemas com sensores, atuadores e regras de decisão simples, executadas localmente e em tempo real.
+
+O ambiente escolhido para este trabalho é um \textbf{escritório corporativo} de médio porte, com recepção, área administrativa, salas de reunião, auditório para treinamentos, estações de trabalho, sala de servidores, copa e um reservatório de água próprio. O problema central é tornar esse ambiente mais seguro, econômico e organizado sem depender de supervisão humana constante.
+
+O objetivo é projetar, simular e testar \textbf{nove automações} para esse escritório, cada uma com ao menos uma entrada, uma saída e uma lógica de decisão própria. Todas foram desenvolvidas em C++ para o Arduino Uno e simuladas no Wokwi. A Seção~\ref{sec:referencial} apresenta os conceitos usados; a Seção~\ref{sec:metodologia}, as ferramentas e os componentes; a Seção~\ref{sec:automacoes} detalha as automações; a Seção~\ref{sec:resultados} discute os resultados e a integração entre elas; e a Seção~\ref{sec:conclusao} traz limitações e melhorias futuras. O código completo está nos apêndices.
+
+\section{Referencial teórico}\label{sec:referencial}
+
+\subsection{Sistemas embarcados}
+
+Sistema embarcado é um sistema computacional dedicado a uma função específica, integrado ao equipamento que controla e, em geral, sujeito a restrições de custo, consumo, memória e tempo de resposta \cite{marwedel2021,wolf2017}. Diferente de um computador de uso geral, ele interage continuamente com o mundo físico: lê grandezas por meio de sensores, processa essas informações e age sobre o ambiente por meio de atuadores. Lee e Seshia \cite{lee2017} descrevem esses sistemas como ciberfísicos e destacam o uso de máquinas de estados finitos para modelar o comportamento reativo, abordagem adotada em várias automações deste trabalho.
+
+\subsection{Sensores e atuadores}
+
+Sensores convertem grandezas físicas em sinais elétricos. Os digitais, como o sensor de presença PIR e os botões, entregam dois níveis lógicos. Os analógicos, como o termistor NTC, o resistor dependente de luz (LDR), o potenciômetro e o sensor de gás MQ-2, entregam uma tensão proporcional à grandeza, lida pelo conversor analógico-digital (ADC) de 10 bits do microcontrolador (valores de 0 a 1023). Há ainda sensores com protocolo próprio, como o DHT22 (temperatura e umidade em um único fio) e o ultrassônico HC-SR04, que mede distância pelo tempo de ida e volta de um pulso sonoro.
+
+Atuadores convertem sinais elétricos em ação: LEDs e displays informam, buzzers alertam, servos posicionam travas e válvulas, e módulos relé permitem que um sinal de 5 V comande cargas de potência, como compressores, bombas e exaustores. A modulação por largura de pulso (PWM) permite variar a potência média entregue a uma carga, recurso usado para dimerizar a iluminação.
+
+\subsection{Plataforma: Arduino Uno e ATmega328P}
+
+O Arduino Uno é uma placa de desenvolvimento baseada no microcontrolador ATmega328P, de 8 bits e arquitetura AVR, com 32 KB de memória flash, 2 KB de SRAM e relógio de 16 MHz \cite{microchip2018,arduino2024}. A placa oferece 14 pinos digitais, 6 deles com PWM, 6 entradas analógicas e comunicação serial, I2C e SPI. A programação é feita em C++ com as bibliotecas do ecossistema Arduino \cite{mcroberts2018,banzi2014}. Um ponto importante do ATmega328P é que os temporizadores são compartilhados: a função \texttt{tone()} usa o \emph{Timer2} e a biblioteca \texttt{Servo} usa o \emph{Timer1}, o que desativa o PWM em alguns pinos e precisa ser considerado na escolha das ligações.
+
+\section{Metodologia}\label{sec:metodologia}
+
+\subsection{Simulador, linguagem e placa}
+
+As automações foram simuladas no \textbf{Wokwi} \cite{wokwi2024}, simulador on-line que executa o código compilado do Arduino e oferece sensores interativos: durante a simulação é possível clicar no PIR, ajustar a temperatura do NTC e do DHT22, a luminosidade do LDR, a concentração de gás do MQ-2 e a distância do HC-SR04. A linguagem é C++ (Arduino) e a placa é o \textbf{Arduino Uno}. Cada automação é um projeto independente no Wokwi, com o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}) e a lista de bibliotecas (\texttt{libraries.txt}).
+
+Os tempos foram reduzidos para que os testes coubessem numa simulação, e cada programa indica o valor que seria usado na prática. Todos os programas usam \texttt{millis()} em vez de \texttt{delay()} para controlar o tempo, de modo que o laço principal continua lendo as entradas enquanto espera.
+
+\subsection{Verificação antes da simulação}
+
+Além dos testes no simulador, adotaram-se duas verificações complementares. Primeiro, cada programa foi compilado com o compilador \texttt{avr-gcc} e o núcleo oficial do Arduino para o ATmega328P, sem nenhum aviso de compilação; a Tabela~\ref{tab:memoria} mostra o uso de memória. Segundo, a lógica de decisão foi exercitada por \textbf{84 testes automatizados}, executados no computador com uma simulação mínima das funções do Arduino, que reproduzem as sequências de entrada descritas nas tabelas de teste da Seção~\ref{sec:automacoes}. Todos os testes passaram.
+
+\begin{table}[!htb]
+\centering
+\caption{Uso de memória de cada automação no ATmega328P}\label{tab:memoria}
+\small
+\begin{tabularx}{\textwidth}{Xrr}
+\toprule
+Automação & Flash (de 32 KB) & SRAM (de 2 KB) \\
+\midrule
+1. Controle de acesso por senha & 13044 B (39,8\%) & 803 B (39,2\%) \\
+2. Sala de reunião com aviso de ocupação & 7712 B (23,5\%) & 513 B (25,0\%) \\
+3. Ar-condicionado por ocupação e temperatura & 8398 B (25,6\%) & 513 B (25,0\%) \\
+4. Monitoramento da sala de servidores & 12782 B (39,0\%) & 620 B (30,3\%) \\
+5. Contador de pessoas e controle de lotação do auditório & 10850 B (33,1\%) & 588 B (28,7\%) \\
+6. Iluminação com aproveitamento da luz natural & 9312 B (28,4\%) & 501 B (24,5\%) \\
+7. Detecção de vazamento de gás na copa & 6784 B (20,7\%) & 280 B (13,7\%) \\
+8. Nível do reservatório e bomba de recalque & 11882 B (36,3\%) & 578 B (28,2\%) \\
+9. Painel de senhas da recepção com atendimento preferencial & 9594 B (29,3\%) & 582 B (28,4\%) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Componentes}
+
+A Tabela~\ref{tab:componentes} resume os componentes usados. Todos estão disponíveis na biblioteca de peças do Wokwi. Os LEDs usam resistores de 220 $\Omega$ em série, e os botões são ligados entre o pino e o GND, com o resistor de \emph{pull-up} interno do microcontrolador ativado no código.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes utilizados}\label{tab:componentes}
+\small
+\begin{tabularx}{\textwidth}{Xcc}
+\toprule
+Componente & Quantidade total & Automações \\
+\midrule
+Arduino Uno (ATmega328P) & 9 & todas \\
+Display LCD 16x2 com módulo I2C (endereço 0x27) & 8 & 1, 2, 3, 4, 5, 6, 8, 9 \\
+Teclado matricial de membrana 4x4 & 1 & 1 \\
+Sensor de presença PIR & 2 & 2, 3 \\
+Termistor NTC (módulo) & 1 & 3 \\
+Potenciômetro & 1 & 3 \\
+Sensor DHT22 (temperatura e umidade) & 1 & 4 \\
+Módulo sensor LDR & 1 & 6 \\
+Sensor de gás MQ-2 & 1 & 7 \\
+Sensor ultrassônico HC-SR04 & 1 & 8 \\
+Botão (\emph{push button}) & 8 & 2, 4, 5, 7, 9 \\
+Servo motor & 3 & 1, 5, 7 \\
+Módulo relé de 1 canal & 4 & 3, 4, 7, 8 \\
+LEDs (com resistor de 220 $\Omega$) & 25 & todas \\
+Buzzer passivo & 6 & 1, 4, 5, 7, 8, 9 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Procedimento de teste}
+
+Para cada automação, montou-se uma tabela de entrada e saída com os casos normais, os limites (por exemplo, o valor exato em que a bomba liga) e as situações de falha (sensor sem resposta, senha errada repetida, lotação esgotada). Cada caso foi executado no Wokwi, e as saídas foram observadas nos LEDs, no display, na posição dos servos e no monitor serial, onde os programas registram cada decisão.
+
+\section{Automações}\label{sec:automacoes}
+
+As nove automações se distribuem pelo escritório conforme a Tabela~\ref{tab:mapa}.
+
+\begin{table}[!htb]
+\centering
+\caption{Distribuição das automações no escritório}\label{tab:mapa}
+\small
+\begin{tabularx}{\textwidth}{clX}
+\toprule
+\# & Local & Automação \\
+\midrule
+1 & Área administrativa & Controle de acesso por senha \\
+2 & Salas de reunião & Aviso de livre, reservada ou ocupada \\
+3 & Salas de reunião e escritórios & Ar-condicionado por ocupação e temperatura \\
+4 & Sala de servidores & Monitoramento de temperatura e umidade \\
+5 & Auditório & Contador de pessoas e controle de lotação \\
+6 & Estações de trabalho & Iluminação com aproveitamento da luz natural \\
+7 & Copa & Detecção de vazamento de gás \\
+8 & Cobertura & Nível do reservatório e bomba de recalque \\
+9 & Recepção & Painel de senhas com atendimento preferencial \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Automação 1: Controle de acesso por senha}\label{sub:a1}
+
+\paragraph{Problema.} A porta da área administrativa, onde ficam documentos de clientes e o arquivo financeiro, depende de chave física. Não há controle de quem entra e nada impede que alguém tente adivinhar uma senha numérica por tentativa e erro. A automação substitui a chave por uma trava eletrônica acionada por senha, com bloqueio temporário depois de erros seguidos.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp1} lista os componentes e a Tabela~\ref{tab:lig1}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 1}\label{tab:comp1}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Teclado matricial de membrana 4x4 & 1 \\
+Servo motor (trava da porta) & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+LED verde e LED vermelho, com resistor de 220 $\Omega$ & 2 \\
+Buzzer passivo & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 1}\label{tab:lig1}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D9, D8, D7, D6 & Linhas R1 a R4 do teclado \\
+D5, D4, D3, D2 & Colunas C1 a C4 do teclado \\
+D10 & Sinal (PWM) do servo \\
+D11 & Buzzer \\
+D12 & LED verde \\
+D13 & LED vermelho \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ1} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a1-controle-acesso} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito1.png}{Circuito da Automação 1 no Wokwi}{fig:circ1}
+
+\paragraph{Lógica.} O comportamento é uma máquina de três estados: \textsc{Aguardando}, \textsc{Liberado} e \textsc{Bloqueado}. Os dígitos ficam num vetor de até seis posições e aparecem mascarados no visor. A tecla \texttt{\#} confirma e a tecla \texttt{*} apaga. Toda a temporização usa \texttt{millis()}, sem travar o laço principal. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+estado <- AGUARDANDO; erros <- 0
+repita para sempre:
+  tecla <- ler teclado
+  se estado = AGUARDANDO e tecla existe:
+    se tecla é dígito e tamanho < 6: guardar dígito; mostrar '*'
+    se tecla = '*': apagar senha digitada
+    se tecla = '#':
+      se senha = 4729: erros <- 0; abrir trava; LED verde; estado <- LIBERADO
+      senão: erros <- erros + 1
+             se erros >= 3: LED vermelho; som grave; estado <- BLOQUEADO
+             senão: mostrar "Senha incorreta" e tentativas restantes
+  se estado = LIBERADO e passaram 5 s: fechar trava; estado <- AGUARDANDO
+  se estado = BLOQUEADO: ignorar teclas; mostrar contagem regressiva
+    se passaram 15 s: erros <- 0; estado <- AGUARDANDO
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste1} reúne os casos executados, e a Figura~\ref{fig:teste1} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 1: entradas e saídas}\label{tab:teste1}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Ligar o circuito & LCD ``Area restrita''; servo em 0$^\circ$; LEDs apagados & \conf \\
+2 & Digitar 4, 7 & LCD ``Senha: **'' & \conf \\
+3 & Tecla * & Senha apagada, LCD ``Senha:'' & \conf \\
+4 & Digitar 4729 e \# & Servo em 90$^\circ$, LED verde, ``Acesso liberado'' & \conf \\
+5 & Aguardar 5 s & Servo volta a 0$^\circ$, LED verde apaga & \conf \\
+6 & Digitar 1111 e \# & ``Senha incorreta / Restam 2 tent.'', LED vermelho por 1,5 s & \conf \\
+7 & Errar mais duas vezes & ``ACESSO BLOQUEADO'' com contagem de 15 s, LED vermelho & \conf \\
+8 & Digitar 4729 e \# durante o bloqueio & Porta continua travada & \conf \\
+9 & Aguardar o fim do bloqueio e digitar 4729 e \# & Trava abre normalmente & \conf \\
+10 & Digitar 10 dígitos seguidos & Só os 6 primeiros são aceitos & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste1.png}{Automação 1: Teclado bloqueado depois de três senhas erradas}{fig:teste1}
+
+\subsection{Automação 2: Sala de reunião com aviso de ocupação}\label{sub:a2}
+
+\paragraph{Problema.} Sem sinalização, as pessoas abrem a porta da sala de reunião para conferir se ela está livre e interrompem conversas. Além disso, salas reservadas ficam vazias quando ninguém aparece (\emph{no-show}) e bloqueiam a agenda. A automação mostra na porta se a sala está livre, reservada ou ocupada e cancela sozinha a reserva que não foi usada.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp2} lista os componentes e a Tabela~\ref{tab:lig2}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 2}\label{tab:comp2}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Sensor de presença PIR & 1 \\
+Botão ``Reservar / Cancelar'' & 1 \\
+LEDs verde, amarelo e vermelho, com resistor de 220 $\Omega$ & 3 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 2}\label{tab:lig2}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D2 & Saída (OUT) do PIR \\
+D3 & Botão, com pull-up interno \\
+D9 / D10 / D11 & LEDs verde / amarelo / vermelho \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ2} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a2-sala-reuniao} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito2.png}{Circuito da Automação 2 no Wokwi}{fig:circ2}
+
+\paragraph{Lógica.} Máquina de três estados (\textsc{Livre}, \textsc{Reservada} e \textsc{Ocupada}). O botão é lido com \emph{debounce} de 50 ms e detecção de borda, de modo que cada aperto conta uma vez só. Os tempos foram reduzidos para a simulação: 20 s de tolerância para o check-in e 15 s sem movimento para liberar a sala (na prática, 10 e 5 minutos). O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+estado <- LIVRE
+repita para sempre:
+  movimento <- PIR em nível alto; se movimento: últimoMovimento <- agora
+  conforme estado:
+    LIVRE:     se movimento: estado <- OCUPADA
+               senão se botão apertado: estado <- RESERVADA; início <- agora
+    RESERVADA: se movimento: estado <- OCUPADA          (check-in)
+               se botão apertado: estado <- LIVRE        (cancelamento)
+               se agora - início >= 20 s: estado <- LIVRE (no-show)
+               mostrar segundos restantes no LCD
+    OCUPADA:   se agora - últimoMovimento >= 15 s: estado <- LIVRE
+  acender somente o LED do estado atual
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste2} reúne os casos executados, e a Figura~\ref{fig:teste2} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 2: entradas e saídas}\label{tab:teste2}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Ligar o circuito & LED verde, LCD ``LIVRE'' & \conf \\
+2 & Apertar o botão & LED amarelo, LCD ``RESERVADA 20s'' em contagem & \conf \\
+3 & Aguardar 20 s sem movimento & Reserva cancelada, volta a ``LIVRE'' & \conf \\
+4 & Reservar e apertar o botão de novo & Reserva cancelada, ``LIVRE'' & \conf \\
+5 & Reservar e simular movimento no PIR & Check-in: LED vermelho, ``OCUPADA'' & \conf \\
+6 & Ficar 14 s sem movimento & Continua ``OCUPADA'' & \conf \\
+7 & Novo movimento e mais 14 s & Continua ``OCUPADA'' (contagem reiniciada) & \conf \\
+8 & Completar 15 s sem movimento & Volta a ``LIVRE'', LED verde & \conf \\
+9 & Movimento com a sala livre & ``OCUPADA'' direto, sem reserva & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste2.png}{Automação 2: Sala reservada aguardando o check-in}{fig:teste2}
+
+\subsection{Automação 3: Ar-condicionado por ocupação e temperatura}\label{sub:a3}
+
+\paragraph{Problema.} O ar-condicionado das salas costuma ficar ligado com a sala vazia, ou liga e desliga sem parar perto da temperatura desejada, o que gasta energia e desgasta o compressor. A automação só refrigera quando há pessoas na sala e usa histerese e um intervalo mínimo entre acionamentos para proteger o equipamento. A temperatura desejada parte de 22 $^\circ$C, dentro da faixa de conforto de verão da ABNT NBR 16401-2 \cite{abnt16401}.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp3} lista os componentes e a Tabela~\ref{tab:lig3}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 3}\label{tab:comp3}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Termistor NTC (módulo) & 1 \\
+Potenciômetro (temperatura desejada) & 1 \\
+Sensor de presença PIR & 1 \\
+Módulo relé (compressor), com LED azul na carga & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 3}\label{tab:lig3}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+A0 & Saída do NTC \\
+A1 & Cursor do potenciômetro \\
+D2 & Saída (OUT) do PIR \\
+D7 & Entrada (IN) do relé; contato NA aciona o LED da carga \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ3} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a3-ar-condicionado} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito3.png}{Circuito da Automação 3 no Wokwi}{fig:circ3}
+
+\paragraph{Lógica.} A temperatura vem da equação Beta do termistor ($\beta = 3950$). O potenciômetro define a temperatura desejada $T_d$ entre 18 e 28 $^\circ$C, em passos de 0,5 $^\circ$C. A sala é considerada ocupada se houve movimento nos últimos 20 s. O compressor liga quando $T \geq T_d + 1$ e desliga quando $T \leq T_d - 1$ ou quando a sala fica vazia. Entre duas mudanças do relé há pelo menos 5 s (na prática, 3 minutos). O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+repita para sempre:
+  se PIR em nível alto: últimoMovimento <- agora
+  ocupada <- (agora - últimoMovimento < 20 s)
+  T  <- 1 / (ln(1 / (1023 / leituraNTC - 1)) / 3950 + 1 / 298,15) - 273,15
+  Td <- 18 + 10 * leituraPot / 1023   (arredondada a 0,5)
+  deveLigar <- estado atual do compressor
+  se não ocupada: deveLigar <- falso
+  senão se T >= Td + 1: deveLigar <- verdadeiro
+  senão se T <= Td - 1: deveLigar <- falso
+  se deveLigar <> compressor e agora - últimaMudança >= 5 s:
+    acionar relé; últimaMudança <- agora
+  a cada 0,5 s: mostrar T, Td, ocupação e estado no LCD
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste3} reúne os casos executados, e a Figura~\ref{fig:teste3} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 3: entradas e saídas}\label{tab:teste3}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & NTC em 26 $^\circ$C, potenciômetro em 22 $^\circ$C, sem movimento & Relé desligado (sala vazia) & \conf \\
+2 & Simular movimento no PIR & Relé liga, LCD ``Ocupada AR LIG'' & \conf \\
+3 & Baixar o NTC para 22,5 $^\circ$C & Continua ligado (dentro da histerese) & \conf \\
+4 & Baixar o NTC para 20,8 $^\circ$C & Relé desliga & \conf \\
+5 & Subir o NTC para 23,5 $^\circ$C logo em seguida & Espera 5 s antes de religar & \conf \\
+6 & Girar o potenciômetro até 28 $^\circ$C & Relé desliga (23,5 $^\circ$C já é frio para o alvo) & \conf \\
+7 & Voltar o potenciômetro a 22 $^\circ$C & Relé liga & \conf \\
+8 & Parar o movimento por 20 s & Relé desliga, LCD ``Vazia AR DESL'' & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste3.png}{Automação 3: Compressor ligado com a sala ocupada}{fig:teste3}
+
+\subsection{Automação 4: Monitoramento da sala de servidores}\label{sub:a4}
+
+\paragraph{Problema.} Se a climatização da sala de servidores falha, a temperatura sobe em poucos minutos e os equipamentos desligam ou se danificam, muitas vezes fora do expediente. A automação classifica o ambiente em três níveis, liga uma ventilação de emergência e dispara alarme sonoro. Os limites seguem a faixa recomendada pela ASHRAE para data centers, de 18 a 27 $^\circ$C \cite{ashrae2021}.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp4} lista os componentes e a Tabela~\ref{tab:lig4}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 4}\label{tab:comp4}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Sensor DHT22 (temperatura e umidade) & 1 \\
+Botão ``Silenciar'' & 1 \\
+LEDs verde, amarelo e vermelho, com resistor de 220 $\Omega$ & 3 \\
+Buzzer passivo & 1 \\
+Módulo relé (ventilação de emergência), com LED na carga & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 4}\label{tab:lig4}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D2 & Dados (SDA) do DHT22 \\
+D3 & Botão, com pull-up interno \\
+D7 & Entrada (IN) do relé \\
+D8 & Buzzer \\
+D9 / D10 / D11 & LEDs verde / amarelo / vermelho \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ4} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a4-sala-servidores} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito4.png}{Circuito da Automação 4 no Wokwi}{fig:circ4}
+
+\paragraph{Lógica.} O DHT22 é lido a cada 2 s, o intervalo mínimo do sensor. O nível é \textsc{Normal} entre 18 e 27 $^\circ$C com umidade de 20 a 80\%; \textsc{Atenção} fora dessas faixas ou se o sensor não responder; e \textsc{Crítico} acima de 32 $^\circ$C. A ventilação liga no nível crítico e só desliga abaixo de 30 $^\circ$C. O botão silencia o alarme atual, e uma nova piora faz o buzzer voltar a tocar. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+a cada 2 s:
+  T, UR <- ler DHT22
+  se leitura inválida:           nível <- ATENÇÃO
+  senão se T > 32:               nível <- CRÍTICO
+  senão se T fora de 18..27:     nível <- ATENÇÃO
+  senão se UR fora de 20..80:    nível <- ATENÇÃO
+  senão:                         nível <- NORMAL
+  se nível mudou e nível <> CRÍTICO: silenciado <- falso
+  acender LED do nível
+  se nível = CRÍTICO: ventilação <- ligada
+  senão se T < 30: ventilação <- desligada
+sempre:
+  se botão apertado e nível = CRÍTICO: silenciado <- verdadeiro
+  buzzer intermitente (0,5 s) se nível = CRÍTICO e não silenciado
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste4} reúne os casos executados, e a Figura~\ref{fig:teste4} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 4: entradas e saídas}\label{tab:teste4}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & DHT22 em 24 $^\circ$C e 45\% & NORMAL, LED verde, ventilação desligada & \conf \\
+2 & Temperatura 29 $^\circ$C & ATENCAO, LED amarelo, sem som & \conf \\
+3 & 24 $^\circ$C e umidade 85\% & ATENCAO & \conf \\
+4 & Temperatura 33 $^\circ$C & CRITICO, LED vermelho, ventilação ligada, buzzer intermitente & \conf \\
+5 & Apertar ``Silenciar'' & Buzzer para; ventilação continua ligada & \conf \\
+6 & Temperatura 31 $^\circ$C & ATENCAO, ventilação ainda ligada (histerese) & \conf \\
+7 & Temperatura 29,5 $^\circ$C & Ventilação desliga & \conf \\
+8 & Temperatura 34 $^\circ$C & Alarme volta a tocar & \conf \\
+9 & Remover o fio de dados do DHT22 e reiniciar & ATENCAO e ``Falha no sensor'' no LCD & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste4.png}{Automação 4: Nível crítico com ventilação de emergência ligada}{fig:teste4}
+
+\subsection{Automação 5: Contador de pessoas e controle de lotação do auditório}\label{sub:a5}
+
+\paragraph{Problema.} Em treinamentos e eventos internos o auditório pode passar do limite de pessoas previsto no projeto de segurança contra incêndio, e, numa evacuação, ninguém sabe quantas pessoas estão lá dentro. A Lei 13.425/2017 reforça a responsabilidade do estabelecimento sobre a lotação \cite{lei13425}. A automação conta entradas e saídas e trava a catraca quando o auditório está lotado.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp5} lista os componentes e a Tabela~\ref{tab:lig5}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 5}\label{tab:comp5}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Botão do sensor de entrada (pedido de passagem) & 1 \\
+Botão do sensor de saída & 1 \\
+Servo motor (catraca de entrada) & 1 \\
+LEDs verde, amarelo e vermelho, com resistor de 220 $\Omega$ & 3 \\
+Buzzer passivo & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 5}\label{tab:lig5}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D2 & Botão de entrada, com pull-up interno \\
+D3 & Botão de saída, com pull-up interno \\
+D6 & Sinal (PWM) do servo \\
+D8 & Buzzer \\
+D9 / D10 / D11 & LEDs verde / amarelo / vermelho \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ5} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a5-controle-lotacao} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito5.png}{Circuito da Automação 5 no Wokwi}{fig:circ5}
+
+\paragraph{Lógica.} Os dois botões representam os sensores da catraca e usam uma estrutura comum de \emph{debounce}. A capacidade foi reduzida para 8 pessoas na simulação. A entrada só é liberada se houver vaga; a saída nunca deixa o contador negativo. O LED muda de verde para amarelo a partir de 80\% da capacidade e para vermelho quando lota. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+ocupação <- 0
+repita para sempre:
+  se botão de entrada apertado:
+    se ocupação < 8: ocupação <- ocupação + 1; abrir catraca por 2 s; bipe curto
+    senão: manter catraca travada; aviso sonoro de lotação
+  se botão de saída apertado e ocupação > 0: ocupação <- ocupação - 1
+  percentual <- ocupação * 100 / 8
+  LED verde se percentual < 80; amarelo se >= 80 e não lotado; vermelho se lotado
+  se a catraca está aberta há 2 s: travar catraca
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste5} reúne os casos executados, e a Figura~\ref{fig:teste5} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 5: entradas e saídas}\label{tab:teste5}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Ligar o circuito & LCD ``Pessoas: 0/8'', LED verde & \conf \\
+2 & Apertar entrada & 1/8, servo em 90$^\circ$ por 2 s e volta a 0$^\circ$ & \conf \\
+3 & Completar 6 entradas & 6/8 (75\%), LED verde & \conf \\
+4 & Sétima entrada & 7/8, LED amarelo, ``Quase lotado'' & \conf \\
+5 & Oitava entrada & 8/8, LED vermelho, ``LOTADO'' & \conf \\
+6 & Nona entrada & Negada: contador fica em 8, catraca travada, aviso sonoro & \conf \\
+7 & Apertar saída & 7/8 & \conf \\
+8 & Apertar saída 9 vezes & Contador para em 0 (nunca negativo) & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste5.png}{Automação 5: Auditório lotado com a catraca travada}{fig:teste5}
+
+\subsection{Automação 6: Iluminação com aproveitamento da luz natural}\label{sub:a6}
+
+\paragraph{Problema.} As luminárias das estações de trabalho costumam ficar em 100\% mesmo com o sol entrando pela janela. A técnica de \emph{daylight harvesting} mede a luz natural e regula as luminárias para completar só o que falta. A meta adotada é de 500 lux, valor que a ABNT NBR ISO/CIE 8995-1 indica para tarefas de escrita e leitura em escritórios \cite{abnt8995}.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp6} lista os componentes e a Tabela~\ref{tab:lig6}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 6}\label{tab:comp6}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Módulo sensor de luminosidade LDR (saída analógica) & 1 \\
+LED branco (luminária dimerizável), com resistor de 220 $\Omega$ & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 6}\label{tab:lig6}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+A0 & Saída analógica (AO) do LDR \\
+D9 & LED da luminária (PWM) \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ6} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a6-iluminacao-natural} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito6.png}{Circuito da Automação 6 no Wokwi}{fig:circ6}
+
+\paragraph{Lógica.} A leitura do LDR é convertida em lux pela curva do componente ($\gamma = 0{,}7$; 50 k$\Omega$ a 10 lux). Uma média móvel exponencial (peso 0,2 para a leitura nova) evita que uma nuvem ou a sombra de uma pessoa mude a luz de repente. A potência é proporcional ao que falta para 500 lux, e uma faixa morta de 5 passos de PWM (cerca de 2\%) impede que a luminária oscile. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+a cada 100 ms:
+  lux <- converter(leitura do LDR)
+  luxSuave <- 0,2 * lux + 0,8 * luxSuave
+  se luxSuave >= 500: potência <- 0
+  senão: potência <- (500 - luxSuave) / 500 * 255
+  se |potência - potênciaAtual| >= 5 ou chegou a 0 ou a 255:
+    potênciaAtual <- potência; PWM da luminária <- potênciaAtual
+  a cada 0,5 s: mostrar lux e percentual no LCD
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste6} reúne os casos executados, e a Figura~\ref{fig:teste6} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 6: entradas e saídas}\label{tab:teste6}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & LDR em 50 lux & Luminária em cerca de 90\% & \conf \\
+2 & LDR em 250 lux & Luminária em cerca de 50\% & \conf \\
+3 & LDR em 400 lux & Luminária em cerca de 20\% & \conf \\
+4 & Saltar de 50 para 1000 lux & Brilho reduz aos poucos, sem apagar de uma vez & \conf \\
+5 & Manter 1000 lux & Luminária apagada (meta atingida pela luz natural) & \conf \\
+6 & Variar de 300 para 304 lux & Luminária não muda (faixa morta) & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste6.png}{Automação 6: Luminária complementando a luz natural}{fig:teste6}
+
+\subsection{Automação 7: Detecção de vazamento de gás na copa}\label{sub:a7}
+
+\paragraph{Problema.} A copa do escritório tem fogão a gás. Um vazamento à noite ou no fim de semana pode passar despercebido e provocar explosão ou incêndio. A automação detecta o gás, fecha a válvula, liga o exaustor e só volta ao normal quando alguém confere o local e rearma o sistema.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp7} lista os componentes e a Tabela~\ref{tab:lig7}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 7}\label{tab:comp7}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Sensor de gás MQ-2 (saídas analógica e digital) & 1 \\
+Botão ``Rearmar'' & 1 \\
+Servo motor (válvula de gás) & 1 \\
+Módulo relé (exaustor), com LED na carga & 1 \\
+LED vermelho, com resistor de 220 $\Omega$ & 1 \\
+Buzzer passivo & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 7}\label{tab:lig7}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+A0 & Saída analógica (AOUT) do MQ-2 \\
+D4 & Saída digital (DOUT) do MQ-2 \\
+D3 & Botão, com pull-up interno \\
+D6 & Sinal (PWM) do servo \\
+D7 & Entrada (IN) do relé \\
+D8 & Buzzer \\
+D9 & LED vermelho \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ7} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a7-vazamento-gas} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito7.png}{Circuito da Automação 7 no Wokwi}{fig:circ7}
+
+\paragraph{Lógica.} Como o simulador não informa a curva de conversão do MQ-2 para ppm, o sistema mede o ar limpo nos primeiros 3 s e usa essa média como linha de base. O alarme dispara se a leitura passar da linha de base mais 150 ou se a saída digital do módulo for a nível baixo, o que dá redundância. O alarme fica travado (\emph{latch}): o rearme só é aceito com o gás abaixo da linha de base mais 75. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+durante 3 s: somar leituras; linhaBase <- média
+repita para sempre:
+  leitura <- AOUT; digital <- (DOUT = baixo)
+  conforme estado:
+    MONITORANDO: se leitura > linhaBase + 150 ou digital:
+                   fechar válvula; ligar exaustor; estado <- ALARME
+    ALARME: sirene de dois tons e LED piscando a cada 0,3 s
+            se botão apertado:
+              se leitura <= linhaBase + 75 e não digital:
+                abrir válvula; desligar exaustor e sirene; estado <- MONITORANDO
+              senão: recusar rearme
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste7} reúne os casos executados, e a Figura~\ref{fig:teste7} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 7: entradas e saídas}\label{tab:teste7}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Ligar com o MQ-2 em ar limpo & Calibração de 3 s; linha de base registrada no monitor serial & \conf \\
+2 & Subir o gás um pouco (abaixo do limiar) & Sem alarme, válvula aberta & \conf \\
+3 & Subir o gás acima do limiar & Válvula fecha (90$^\circ$), exaustor liga, sirene e LED piscando & \conf \\
+4 & Apertar ``Rearmar'' com gás alto & Rearme recusado & \conf \\
+5 & Baixar o gás para nível seguro, sem apertar & Alarme continua (latch) & \conf \\
+6 & Apertar ``Rearmar'' & Válvula abre, exaustor e sirene desligam & \conf \\
+7 & Atributo \texttt{threshold} do MQ-2 em 1 V e reiniciar & Alarme pela saída digital (redundância) & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste7.png}{Automação 7: Alarme de gás com válvula fechada e exaustor ligado}{fig:teste7}
+
+\subsection{Automação 8: Nível do reservatório e bomba de recalque}\label{sub:a8}
+
+\paragraph{Problema.} A caixa d'água que abastece banheiros e copa pode esvaziar sem aviso, transbordar com a bomba ligada ou fazer a bomba trabalhar a seco quando o sensor falha. A automação mede o nível por ultrassom, controla a bomba com histerese e protege o sistema contra falhas do sensor.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp8} lista os componentes e a Tabela~\ref{tab:lig8}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 8}\label{tab:comp8}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Sensor ultrassônico HC-SR04 & 1 \\
+Módulo relé (bomba de recalque), com LED na carga & 1 \\
+LEDs da barra de nível, com resistor de 220 $\Omega$ & 4 \\
+Buzzer passivo & 1 \\
+Display LCD 16x2 com módulo I2C & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 8}\label{tab:lig8}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D12 / D13 & TRIG / ECHO do HC-SR04 \\
+D7 & Entrada (IN) do relé \\
+D8 & Buzzer \\
+D2, D3, D4, D5 & Barra de LEDs (25, 50, 75 e 100\%) \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ8} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a8-reservatorio-agua} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito8.png}{Circuito da Automação 8 no Wokwi}{fig:circ8}
+
+\paragraph{Lógica.} A distância até a água é a mediana de três medidas, o que descarta um eco espúrio. Com o sensor na tampa, 20 cm correspondem a 100\% e 220 cm a 0\%. A bomba liga abaixo de 25\% e desliga ao chegar a 90\%; entre esses valores mantém o estado anterior. Abaixo de 10\% há bipe de reserva crítica. Sem eco, a bomba é bloqueada. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+a cada 0,5 s:
+  d <- mediana de 3 medidas do HC-SR04 (tempo do eco / 58)
+  se não houve eco: falha <- verdadeiro; desligar bomba; mostrar falha
+  senão:
+    nível <- (220 - d) * 100 / (220 - 20), limitado a 0..100
+    se nível < 25: ligar bomba
+    senão se nível >= 90: desligar bomba
+  se falha ou nível < 10: bipe a cada 2 s
+  acender os LEDs da barra até o nível; mostrar nível e bomba no LCD
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste8} reúne os casos executados, e a Figura~\ref{fig:teste8} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 8: entradas e saídas}\label{tab:teste8}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Distância 150 cm & Nível 35\%, bomba desligada, 1 LED da barra & \conf \\
+2 & Distância 180 cm & Nível 20\%: bomba liga & \conf \\
+3 & Distância 100 cm & Nível 60\%: bomba continua ligada, 2 LEDs & \conf \\
+4 & Distância 38 cm & Nível 91\%: bomba desliga & \conf \\
+5 & Distância 100 cm de novo & Bomba continua desligada (histerese) & \conf \\
+6 & Distância 205 cm & Nível 8\%: bomba liga e bipe de reserva crítica & \conf \\
+7 & Remover o fio do ECHO e reiniciar & ``FALHA NO SENSOR'', bomba bloqueada, bipe & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste8.png}{Automação 8: Bomba ligada enchendo o reservatório}{fig:teste8}
+
+\subsection{Automação 9: Painel de senhas da recepção com atendimento preferencial}\label{sub:a9}
+
+\paragraph{Problema.} Na recepção, visitantes e fornecedores formam fila sem ordem definida, e o atendimento preferencial, garantido pela Lei 10.048/2000 \cite{lei10048}, fica a critério de quem está no balcão. A automação emite senhas normais e preferenciais e decide a ordem de chamada sem deixar a fila normal parada.
+
+\paragraph{Componentes.} A Tabela~\ref{tab:comp9} lista os componentes e a Tabela~\ref{tab:lig9}, as ligações ao Arduino Uno. A alimentação (5 V e GND) de todos os módulos vem da própria placa.
+
+\begin{table}[!htb]
+\centering
+\caption{Componentes da Automação 9}\label{tab:comp9}
+\small
+\begin{tabularx}{\textwidth}{Xc}
+\toprule
+Componente & Qtd. \\
+\midrule
+Botões ``Senha normal'', ``Senha preferencial'' e ``Chamar próximo'' & 3 \\
+Display LCD 16x2 com módulo I2C (painel) & 1 \\
+Buzzer passivo & 1 \\
+LED ``Chamando'', com resistor de 220 $\Omega$ & 1 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htb]
+\centering
+\caption{Ligações da Automação 9}\label{tab:lig9}
+\small
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+Pino do Arduino & Ligado a \\
+\midrule
+D2 / D3 / D4 & Botões normal / preferencial / chamar, com pull-up interno \\
+D8 & Buzzer \\
+D9 & LED ``Chamando'' \\
+A4 / A5 & SDA / SCL do LCD \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Esquema do circuito.} A Figura~\ref{fig:circ9} mostra o circuito montado no Wokwi. O projeto completo da simulação está na pasta \simlink{a9-painel-senhas} do repositório (Apêndice~\ref{ap:executar}).
+
+\captura{circuito9.png}{Circuito da Automação 9 no Wokwi}{fig:circ9}
+
+\paragraph{Lógica.} Cada fila é controlada por dois contadores, de senhas emitidas e de senhas chamadas; quem aguarda é a diferença entre eles. A fila preferencial tem prioridade, mas depois de duas preferenciais seguidas o sistema chama uma normal, se houver alguém esperando. Essa regra evita que a fila normal fique parada indefinidamente. O pseudocódigo resume a decisão:
+
+\begin{lstlisting}[style=pseudo]
+repita para sempre:
+  se botão normal: emitidasN <- emitidasN + 1  (senha N001, N002...)
+  se botão preferencial: emitidasP <- emitidasP + 1  (senha P001, P002...)
+  se botão chamar:
+    se ninguém aguarda: mostrar "Fila vazia"
+    senão se há preferencial e (seguidas < 2 ou não há normal):
+      chamar próxima P; seguidas <- seguidas + 1
+    senão: chamar próxima N; seguidas <- 0
+    tocar aviso de dois tons; acender LED por 3 s
+  mostrar última senha chamada e o tamanho das filas no LCD
+\end{lstlisting}
+
+\paragraph{Testes.} A Tabela~\ref{tab:teste9} reúne os casos executados, e a Figura~\ref{fig:teste9} mostra um deles na simulação.
+
+\begin{table}[!htb]
+\centering
+\caption{Testes da Automação 9: entradas e saídas}\label{tab:teste9}
+\small
+\begin{tabularx}{\textwidth}{cXXc}
+\toprule
+\# & Entrada ou ação & Saída esperada & Resultado \\
+\midrule
+1 & Apertar ``Chamar'' com as filas vazias & ``Fila vazia''; nada é chamado & \conf \\
+2 & Emitir 3 senhas normais e 3 preferenciais & LCD ``Fila N:3 P:3'' & \conf \\
+3 & Apertar ``Chamar'' 6 vezes & Ordem P001, P002, N001, P003, N002, N003 & \conf \\
+4 & Logo após uma chamada & LED aceso e senha no painel & \conf \\
+5 & Aguardar 3 s & LED apaga & \conf \\
+6 & Só preferenciais na fila & Chamadas em sequência, sem travar & \conf \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\captura{teste9.png}{Automação 9: Painel chamando a próxima senha}{fig:teste9}
+
+\section{Resultados e discussão}\label{sec:resultados}
+
+As nove automações funcionaram como descrito: todos os casos das tabelas de teste produziram as saídas esperadas no simulador, os 84 testes automatizados de lógica passaram e os programas compilaram para o ATmega328P sem avisos, usando no máximo 40\% da memória flash e 40\% da SRAM (Tabela~\ref{tab:memoria}). Há, portanto, folga para recursos futuros, como comunicação em rede.
+
+\subsection{Dificuldades}
+
+A primeira dificuldade foi a \textbf{distância entre o tempo real e o tempo de teste}. Esperar 5 minutos para uma sala ser liberada ou 3 minutos para proteger um compressor tornaria os testes inviáveis; por isso os tempos foram parametrizados em constantes no início de cada programa e reduzidos para a simulação.
+
+A segunda foi a \textbf{calibração de sensores analógicos}. O MQ-2 do Wokwi não informa a curva de conversão da tensão para ppm, e o valor absoluto da leitura varia com o modelo e o ambiente. A solução foi medir a linha de base do ar limpo ao ligar o sistema e decidir por variação relativa, somando a saída digital do módulo como segunda fonte de alarme. Para o NTC e o LDR, usaram-se as equações físicas dos componentes, o que torna as leituras comparáveis com valores de norma, como os 500 lux da NBR ISO/CIE 8995-1.
+
+A terceira foi \textbf{evitar oscilações}. Controles do tipo liga e desliga perto de um limite tendem a acionar o atuador repetidamente. Isso foi tratado com histerese (ar-condicionado, ventilação da sala de servidores e bomba), intervalo mínimo entre acionamentos (compressor), média móvel e faixa morta (iluminação) e \emph{debounce} em todos os botões.
+
+Por fim, houve o cuidado com os \textbf{recursos compartilhados do microcontrolador}: os temporizadores usados por \texttt{tone()} e pela biblioteca \texttt{Servo} desativam o PWM em alguns pinos, e por isso a luminária da Automação~6, que depende de PWM, não divide a placa com um servo.
+
+\subsection{Integração no ambiente}
+
+Embora cada automação rode em uma placa própria, todas pertencem ao mesmo projeto e se complementam ao longo do dia de trabalho. Um visitante chega à recepção e recebe uma senha (Automação~9); o colaborador entra na área administrativa pela porta com senha (Automação~1); a reunião começa e a sala passa a ``ocupada'' (Automação~2), o que também mantém o ar-condicionado ativo (Automação~3), enquanto as estações de trabalho aproveitam a luz natural (Automação~6). À tarde, o treinamento no auditório respeita a lotação (Automação~5). Fora do expediente, os sistemas de segurança continuam atentos: sala de servidores (Automação~4), copa (Automação~7) e reservatório (Automação~8).
+
+O sensor de presença é o ponto de integração mais evidente: a mesma informação de ocupação usada na sinalização da sala de reunião pode desligar o ar-condicionado e a iluminação quando a sala esvazia. Do mesmo modo, a contagem do auditório pode alimentar o ar-condicionado com a carga térmica real do ambiente.
+
+\section{Conclusão}\label{sec:conclusao}
+
+O trabalho mostrou que um único microcontrolador de 8 bits, com componentes de baixo custo, resolve problemas reais de um escritório corporativo quando a lógica de decisão é bem modelada. Máquinas de estados, histerese, filtros simples e detecção de falhas transformaram leituras de sensores em decisões seguras e previsíveis.
+
+\textbf{Limitações.} Os resultados vêm de simulação: sensores reais têm ruído, deriva e tempos de aquecimento (o MQ-2 físico precisa de vários minutos para estabilizar), e cargas de potência exigiriam proteção elétrica adequada. A senha da Automação~1 está fixa no código, as automações não se comunicam entre si e os textos do display não usam acentos, por limitação do LCD padrão.
+
+\textbf{Melhorias futuras.} Migrar as automações para o ESP32, com Wi-Fi, e integrá-las por MQTT a um painel central; compartilhar a ocupação entre sala, ar-condicionado e iluminação; guardar senhas na EEPROM e adicionar cartões RFID com registro de acessos; incluir um relógio de tempo real para agendas e para o histórico de alarmes; e enviar notificações ao celular da equipe de manutenção quando houver alarme de gás, de temperatura ou de reservatório.
+
+\bibliographystyle{sbc}
+\bibliography{referencias}
+
+\appendix
+
+\section{Como executar as simulações}\label{ap:executar}
+
+Os nove projetos estão no repositório público deste trabalho no GitHub, na pasta \texttt{wokwi/}, uma subpasta por automação (\texttt{a1-controle-acesso} a \texttt{a9-painel-senhas}). Cada subpasta contém o programa (\texttt{sketch.ino}), o circuito (\texttt{diagram.json}), as bibliotecas (\texttt{libraries.txt}), o firmware já compilado (\texttt{sketch.hex} e \texttt{sketch.elf}) e o arquivo de configuração \texttt{wokwi.toml}. O arquivo \texttt{README.md} do repositório repete estas instruções.
+
+\paragraph{No navegador.} Em \url{https://wokwi.com}, crie um projeto \emph{Arduino Uno}, cole o conteúdo de \texttt{sketch.ino}, \texttt{diagram.json} e \texttt{libraries.txt} nas abas de mesmo nome e clique no botão verde de iniciar.
+
+\paragraph{No Visual Studio Code.} Instale a extensão \emph{Wokwi Simulator}, abra a subpasta da automação e execute o comando \emph{Wokwi: Start Simulator}. O firmware pré-compilado é carregado pelo \texttt{wokwi.toml}, sem necessidade de compilar.
+
+Durante a simulação, clique nos sensores para alterar seus valores (presença, temperatura, umidade, luminosidade, gás e distância) e nos botões e no teclado para interagir. O monitor serial registra cada decisão do programa. A senha da Automação~1 é 4729; na Automação~7, aguarde os 3 s de calibração antes de aumentar o gás.
+
+\section{Código da Automação 1: Controle de acesso por senha}\label{ap:a1}
+
+\noindent Projeto do Wokwi: pasta \simlink{a1-controle-acesso} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C, Keypad, Servo.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 1: Controle de acesso por senha
+ * ---------------------------------------------------------------------------
+ *  Problema: a porta da área administrativa fica destrancada ou depende de
+ *  chave física, sem registro de tentativas e sem proteção contra quem tenta
+ *  adivinhar a senha.
+ *
+ *  Entradas: teclado matricial 4x4.
+ *  Saídas:   servo motor (trava da porta), LED verde (acesso liberado),
+ *            LED vermelho (negado ou bloqueado), buzzer e LCD 16x2 I2C.
+ *
+ *  Lógica (máquina de estados):
+ *    AGUARDANDO -> senha correta + '#'            -> LIBERADO (porta 5 s aberta)
+ *    AGUARDANDO -> senha errada + '#' (3a vez)    -> BLOQUEADO (15 s)
+ *    LIBERADO   -> fim do tempo                   -> AGUARDANDO (trava fecha)
+ *    BLOQUEADO  -> fim do tempo                   -> AGUARDANDO (zera erros)
+ *  Tecla '*' apaga o que foi digitado. Letras A a D são ignoradas.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Keypad.h>
+#include <Servo.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_SERVO        = 10;
+const byte PINO_BUZZER       = 11;
+const byte PINO_LED_VERDE    = 12;
+const byte PINO_LED_VERMELHO = 13;
+
+// ----------------------------- Teclado 4x4 ---------------------------------
+const byte LINHAS = 4;
+const byte COLUNAS = 4;
+char mapaTeclas[LINHAS][COLUNAS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+byte pinosLinhas[LINHAS]   = {9, 8, 7, 6};   // R1..R4
+byte pinosColunas[COLUNAS] = {5, 4, 3, 2};   // C1..C4
+Keypad teclado = Keypad(makeKeymap(mapaTeclas), pinosLinhas, pinosColunas, LINHAS, COLUNAS);
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // endereço padrão do LCD I2C no Wokwi
+Servo trava;
+
+// ----------------------------- Parâmetros ----------------------------------
+const char SENHA_CORRETA[] = "4729";            // senha da área administrativa
+const byte TAMANHO_MAXIMO = 6;                   // dígitos aceitos no visor
+const byte TENTATIVAS_MAXIMAS = 3;               // erros seguidos até bloquear
+const unsigned long TEMPO_PORTA_ABERTA = 5000;   // ms com a trava aberta
+const unsigned long TEMPO_BLOQUEIO = 15000;      // ms bloqueado (na prática, 5 min)
+const int ANGULO_TRAVADA = 0;
+const int ANGULO_DESTRAVADA = 90;
+
+// ----------------------------- Estado --------------------------------------
+enum Estado { AGUARDANDO, LIBERADO, BLOQUEADO };
+Estado estado = AGUARDANDO;
+
+char digitada[TAMANHO_MAXIMO + 1] = "";  // senha que está sendo digitada
+byte quantidadeDigitos = 0;
+byte errosSeguidos = 0;
+unsigned long inicioEstado = 0;          // millis() em que o estado começou
+long ultimoSegundoMostrado = -1;         // evita reescrever o LCD sem necessidade
+
+// Escreve as duas linhas do LCD completando com espaços (sem piscar a tela)
+void mostrar(const char *linha1, const char *linha2) {
+  char buffer[17];
+  snprintf(buffer, sizeof(buffer), "%-16s", linha1);
+  lcd.setCursor(0, 0);
+  lcd.print(buffer);
+  snprintf(buffer, sizeof(buffer), "%-16s", linha2);
+  lcd.setCursor(0, 1);
+  lcd.print(buffer);
+}
+
+// Mostra a senha mascarada com asteriscos
+void mostrarTelaSenha() {
+  char mascara[17] = "Senha: ";
+  for (byte i = 0; i < quantidadeDigitos; i++) strcat(mascara, "*");
+  mostrar("Area restrita", mascara);
+}
+
+void apagarDigitada() {
+  quantidadeDigitos = 0;
+  digitada[0] = '\0';
+}
+
+void entrarAguardando() {
+  estado = AGUARDANDO;
+  inicioEstado = millis();
+  apagarDigitada();
+  trava.write(ANGULO_TRAVADA);
+  digitalWrite(PINO_LED_VERDE, LOW);
+  digitalWrite(PINO_LED_VERMELHO, LOW);
+  mostrarTelaSenha();
+  Serial.println(F("[ACESSO] Aguardando senha"));
+}
+
+void liberarAcesso() {
+  estado = LIBERADO;
+  inicioEstado = millis();
+  errosSeguidos = 0;
+  trava.write(ANGULO_DESTRAVADA);
+  digitalWrite(PINO_LED_VERDE, HIGH);
+  digitalWrite(PINO_LED_VERMELHO, LOW);
+  tone(PINO_BUZZER, 1800, 200);  // bipe curto e agudo de confirmação
+  mostrar("Acesso liberado", "Porta aberta");
+  Serial.println(F("[ACESSO] Senha correta: porta destravada"));
+}
+
+void bloquearTeclado() {
+  estado = BLOQUEADO;
+  inicioEstado = millis();
+  ultimoSegundoMostrado = -1;
+  digitalWrite(PINO_LED_VERDE, LOW);
+  digitalWrite(PINO_LED_VERMELHO, HIGH);
+  tone(PINO_BUZZER, 400, 1500);  // som grave e longo de alerta
+  Serial.println(F("[ACESSO] 3 erros seguidos: teclado bloqueado"));
+}
+
+// Compara a senha digitada com a cadastrada e decide o próximo estado
+void conferirSenha() {
+  if (quantidadeDigitos == 0) return;  // '#' sem nada digitado não conta
+  if (strcmp(digitada, SENHA_CORRETA) == 0) {
+    liberarAcesso();
+    return;
+  }
+  errosSeguidos++;
+  Serial.print(F("[ACESSO] Senha incorreta. Erros seguidos: "));
+  Serial.println(errosSeguidos);
+  if (errosSeguidos >= TENTATIVAS_MAXIMAS) {
+    bloquearTeclado();
+    return;
+  }
+  char aviso[20];
+  snprintf(aviso, sizeof(aviso), "Restam %d tent.", TENTATIVAS_MAXIMAS - errosSeguidos);
+  digitalWrite(PINO_LED_VERMELHO, HIGH);
+  tone(PINO_BUZZER, 400, 400);
+  mostrar("Senha incorreta", aviso);
+  delay(1500);  // tempo de leitura da mensagem
+  digitalWrite(PINO_LED_VERMELHO, LOW);
+  apagarDigitada();
+  mostrarTelaSenha();
+}
+
+// Trata uma tecla pressionada enquanto o sistema aguarda a senha
+void tratarTecla(char tecla) {
+  if (tecla >= '0' && tecla <= '9') {
+    if (quantidadeDigitos < TAMANHO_MAXIMO) {
+      digitada[quantidadeDigitos++] = tecla;
+      digitada[quantidadeDigitos] = '\0';
+      tone(PINO_BUZZER, 1200, 40);  // clique de tecla
+      mostrarTelaSenha();
+    }
+  } else if (tecla == '*') {
+    apagarDigitada();
+    mostrarTelaSenha();
+  } else if (tecla == '#') {
+    conferirSenha();
+  }
+  // 'A', 'B', 'C' e 'D' não têm função nesta automação
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_LED_VERDE, OUTPUT);
+  pinMode(PINO_LED_VERMELHO, OUTPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+  trava.attach(PINO_SERVO);
+  lcd.init();
+  lcd.backlight();
+  entrarAguardando();
+}
+
+void loop() {
+  unsigned long agora = millis();
+  char tecla = teclado.getKey();
+
+  switch (estado) {
+    case AGUARDANDO:
+      if (tecla) tratarTecla(tecla);
+      break;
+
+    case LIBERADO:
+      // Fecha a trava sozinho depois do tempo de passagem
+      if (agora - inicioEstado >= TEMPO_PORTA_ABERTA) {
+        Serial.println(F("[ACESSO] Tempo esgotado: porta travada"));
+        entrarAguardando();
+      }
+      break;
+
+    case BLOQUEADO: {
+      if (tecla) tone(PINO_BUZZER, 300, 100);  // teclas são ignoradas
+      unsigned long decorrido = agora - inicioEstado;
+      if (decorrido >= TEMPO_BLOQUEIO) {
+        errosSeguidos = 0;
+        Serial.println(F("[ACESSO] Fim do bloqueio"));
+        entrarAguardando();
+        break;
+      }
+      // Contagem regressiva no visor, atualizada uma vez por segundo
+      long restante = (TEMPO_BLOQUEIO - decorrido + 999) / 1000;
+      if (restante != ultimoSegundoMostrado) {
+        ultimoSegundoMostrado = restante;
+        char linha[17];
+        snprintf(linha, sizeof(linha), "Aguarde %ld s", restante);
+        mostrar("ACESSO BLOQUEADO", linha);
+      }
+      break;
+    }
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 2: Sala de reunião com aviso de ocupação}\label{ap:a2}
+
+\noindent Projeto do Wokwi: pasta \simlink{a2-sala-reuniao} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 2: Sala de reunião com aviso de ocupação
+ * ---------------------------------------------------------------------------
+ *  Problema: pessoas abrem a porta da sala de reunião no meio de uma conversa
+ *  para ver se está livre, e salas reservadas ficam vazias porque ninguém
+ *  apareceu (o chamado "no-show"), bloqueando a agenda.
+ *
+ *  Entradas: sensor de presença PIR e botão "Reservar / Cancelar".
+ *  Saídas:   LEDs verde (livre), amarelo (reservada), vermelho (ocupada)
+ *            e LCD 16x2 I2C na porta da sala.
+ *
+ *  Lógica (máquina de estados):
+ *    LIVRE      -> movimento detectado          -> OCUPADA
+ *    LIVRE      -> botão                        -> RESERVADA
+ *    RESERVADA  -> movimento (check-in)         -> OCUPADA
+ *    RESERVADA  -> botão (cancelar)             -> LIVRE
+ *    RESERVADA  -> 20 s sem ninguém (no-show)   -> LIVRE
+ *    OCUPADA    -> 15 s sem movimento           -> LIVRE
+ *  Os tempos estão reduzidos para a simulação (na prática, 10 e 5 minutos).
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_PIR          = 2;
+const byte PINO_BOTAO        = 3;   // botão ligado ao GND (INPUT_PULLUP)
+const byte PINO_LED_VERDE    = 9;
+const byte PINO_LED_AMARELO  = 10;
+const byte PINO_LED_VERMELHO = 11;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const unsigned long TOLERANCIA_RESERVA = 20000;  // ms até cancelar o no-show
+const unsigned long TEMPO_SEM_MOVIMENTO = 15000; // ms parada até liberar a sala
+const unsigned long DEBOUNCE = 50;               // ms para filtrar o ruído do botão
+
+// ----------------------------- Estado --------------------------------------
+enum EstadoSala { LIVRE, RESERVADA, OCUPADA };
+EstadoSala estado = LIVRE;
+
+unsigned long inicioEstado = 0;       // quando o estado atual começou
+unsigned long ultimoMovimento = 0;    // último instante com PIR em nível alto
+long ultimoSegundoMostrado = -1;
+
+// Leitura do botão com debounce e detecção de borda
+int leituraAnterior = HIGH;
+int estadoEstavel = HIGH;
+unsigned long ultimaMudanca = 0;
+
+void mostrar(const char *linha1, const char *linha2) {
+  char buffer[17];
+  snprintf(buffer, sizeof(buffer), "%-16s", linha1);
+  lcd.setCursor(0, 0);
+  lcd.print(buffer);
+  snprintf(buffer, sizeof(buffer), "%-16s", linha2);
+  lcd.setCursor(0, 1);
+  lcd.print(buffer);
+}
+
+// Acende somente o LED que corresponde ao estado
+void acenderLeds(bool verde, bool amarelo, bool vermelho) {
+  digitalWrite(PINO_LED_VERDE, verde ? HIGH : LOW);
+  digitalWrite(PINO_LED_AMARELO, amarelo ? HIGH : LOW);
+  digitalWrite(PINO_LED_VERMELHO, vermelho ? HIGH : LOW);
+}
+
+void mudarEstado(EstadoSala novo) {
+  estado = novo;
+  inicioEstado = millis();
+  ultimoSegundoMostrado = -1;
+  switch (novo) {
+    case LIVRE:
+      acenderLeds(true, false, false);
+      mostrar("Sala Atlantico", "LIVRE");
+      Serial.println(F("[SALA] LIVRE"));
+      break;
+    case RESERVADA:
+      acenderLeds(false, true, false);
+      Serial.println(F("[SALA] RESERVADA: aguardando check-in"));
+      break;
+    case OCUPADA:
+      acenderLeds(false, false, true);
+      mostrar("Sala Atlantico", "OCUPADA");
+      Serial.println(F("[SALA] OCUPADA: reuniao em andamento"));
+      break;
+  }
+}
+
+// Devolve true uma única vez a cada aperto do botão (borda de descida)
+bool botaoApertado() {
+  int leitura = digitalRead(PINO_BOTAO);
+  bool apertou = false;
+  if (leitura != leituraAnterior) ultimaMudanca = millis();
+  if (millis() - ultimaMudanca > DEBOUNCE && leitura != estadoEstavel) {
+    estadoEstavel = leitura;
+    if (estadoEstavel == LOW) apertou = true;
+  }
+  leituraAnterior = leitura;
+  return apertou;
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_PIR, INPUT);
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_LED_VERDE, OUTPUT);
+  pinMode(PINO_LED_AMARELO, OUTPUT);
+  pinMode(PINO_LED_VERMELHO, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  mudarEstado(LIVRE);
+}
+
+void loop() {
+  unsigned long agora = millis();
+  bool movimento = digitalRead(PINO_PIR) == HIGH;
+  bool apertou = botaoApertado();
+  if (movimento) ultimoMovimento = agora;
+
+  switch (estado) {
+    case LIVRE:
+      if (movimento) mudarEstado(OCUPADA);
+      else if (apertou) mudarEstado(RESERVADA);
+      break;
+
+    case RESERVADA: {
+      if (movimento) { mudarEstado(OCUPADA); break; }       // check-in
+      if (apertou) { mudarEstado(LIVRE); break; }           // cancelamento
+      unsigned long decorrido = agora - inicioEstado;
+      if (decorrido >= TOLERANCIA_RESERVA) {                // no-show
+        Serial.println(F("[SALA] Ninguem chegou: reserva cancelada"));
+        mudarEstado(LIVRE);
+        break;
+      }
+      long restante = (TOLERANCIA_RESERVA - decorrido + 999) / 1000;
+      if (restante != ultimoSegundoMostrado) {              // contagem no visor
+        ultimoSegundoMostrado = restante;
+        char linha[17];
+        snprintf(linha, sizeof(linha), "RESERVADA %lds", restante);
+        mostrar("Sala Atlantico", linha);
+      }
+      break;
+    }
+
+    case OCUPADA:
+      // A sala só é liberada depois de um período contínuo sem movimento
+      if (agora - ultimoMovimento >= TEMPO_SEM_MOVIMENTO) mudarEstado(LIVRE);
+      break;
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 3: Ar-condicionado por ocupação e temperatura}\label{ap:a3}
+
+\noindent Projeto do Wokwi: pasta \simlink{a3-ar-condicionado} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 3: Ar-condicionado por ocupação e
+ *  temperatura
+ * ---------------------------------------------------------------------------
+ *  Problema: o ar-condicionado das salas fica ligado com a sala vazia, ou liga
+ *  e desliga sem parar perto da temperatura desejada, o que gasta energia e
+ *  desgasta o compressor.
+ *
+ *  Entradas: termistor NTC (temperatura), potenciômetro (temperatura
+ *            desejada, de 18 a 28 °C) e sensor de presença PIR.
+ *  Saídas:   relé do compressor (com LED azul na carga) e LCD 16x2 I2C.
+ *
+ *  Lógica:
+ *    - A sala é "ocupada" se houve movimento nos últimos 20 s
+ *      (na prática, 15 min).
+ *    - Liga se ocupada E temperatura >= desejada + 1,0 °C.
+ *    - Desliga se temperatura <= desejada - 1,0 °C OU a sala ficou vazia.
+ *    - A faixa de 2 °C entre ligar e desligar é a histerese, que evita o
+ *      liga e desliga contínuo.
+ *    - Entre duas mudanças do relé há um intervalo mínimo de 5 s
+ *      (na prática, 3 min) para proteger o compressor.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <math.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_NTC   = A0;
+const byte PINO_POT   = A1;
+const byte PINO_PIR   = 2;
+const byte PINO_RELE  = 7;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const float BETA_NTC = 3950;                       // coeficiente do termistor do Wokwi
+const float HISTERESE = 1.0;                       // °C acima e abaixo da desejada
+const float DESEJADA_MIN = 18.0, DESEJADA_MAX = 28.0;
+const unsigned long TEMPO_OCUPACAO = 20000;        // ms de validade do último movimento
+const unsigned long INTERVALO_MINIMO_RELE = 5000;  // ms de proteção do compressor
+const unsigned long INTERVALO_TELA = 500;          // ms entre atualizações do LCD
+
+// ----------------------------- Estado --------------------------------------
+bool compressorLigado = false;
+unsigned long ultimaMudancaRele = 0;
+unsigned long ultimoMovimento = 0;
+bool houveMovimento = false;          // evita "ocupada" logo ao ligar a placa
+unsigned long ultimaTela = 0;
+
+// Converte a leitura analógica do NTC em graus Celsius (equação Beta)
+float lerTemperatura() {
+  int leitura = analogRead(PINO_NTC);
+  leitura = constrain(leitura, 1, 1022);  // evita divisão por zero nos extremos
+  return 1.0 / (log(1.0 / (1023.0 / leitura - 1.0)) / BETA_NTC + 1.0 / 298.15) - 273.15;
+}
+
+// Converte a posição do potenciômetro na temperatura desejada (passo de 0,5 °C)
+float lerTemperaturaDesejada() {
+  int leitura = analogRead(PINO_POT);
+  float valor = DESEJADA_MIN + (DESEJADA_MAX - DESEJADA_MIN) * leitura / 1023.0;
+  return round(valor * 2.0) / 2.0;
+}
+
+void acionarCompressor(bool ligar) {
+  if (ligar == compressorLigado) return;
+  compressorLigado = ligar;
+  ultimaMudancaRele = millis();
+  digitalWrite(PINO_RELE, ligar ? HIGH : LOW);
+  Serial.println(ligar ? F("[AR] Compressor LIGADO") : F("[AR] Compressor DESLIGADO"));
+}
+
+void atualizarTela(float temperatura, float desejada, bool ocupada) {
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  lcd.print(temperatura, 1);
+  lcd.print(" Alvo:");
+  lcd.print(desejada, 1);
+  lcd.print("   ");
+  lcd.setCursor(0, 1);
+  lcd.print(ocupada ? "Ocupada " : "Vazia   ");
+  lcd.print(compressorLigado ? "AR LIG  " : "AR DESL ");
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_PIR, INPUT);
+  pinMode(PINO_RELE, OUTPUT);
+  digitalWrite(PINO_RELE, LOW);
+  lcd.init();
+  lcd.backlight();
+  // Permite o primeiro acionamento sem esperar o intervalo de proteção
+  ultimaMudancaRele = millis() - INTERVALO_MINIMO_RELE;
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  if (digitalRead(PINO_PIR) == HIGH) {
+    ultimoMovimento = agora;
+    houveMovimento = true;
+  }
+  bool ocupada = houveMovimento && (agora - ultimoMovimento < TEMPO_OCUPACAO);
+
+  float temperatura = lerTemperatura();
+  float desejada = lerTemperaturaDesejada();
+
+  // Decisão com histerese
+  bool deveLigar = compressorLigado;
+  if (!ocupada) deveLigar = false;
+  else if (temperatura >= desejada + HISTERESE) deveLigar = true;
+  else if (temperatura <= desejada - HISTERESE) deveLigar = false;
+
+  // Proteção do compressor: só muda o relé depois do intervalo mínimo
+  if (deveLigar != compressorLigado && agora - ultimaMudancaRele >= INTERVALO_MINIMO_RELE) {
+    acionarCompressor(deveLigar);
+  }
+
+  if (agora - ultimaTela >= INTERVALO_TELA) {
+    ultimaTela = agora;
+    atualizarTela(temperatura, desejada, ocupada);
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 4: Monitoramento da sala de servidores}\label{ap:a4}
+
+\noindent Projeto do Wokwi: pasta \simlink{a4-sala-servidores} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C, DHT sensor library, Adafruit Unified Sensor.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 4: Monitoramento da sala de servidores
+ * ---------------------------------------------------------------------------
+ *  Problema: se o ar da sala de servidores falha, a temperatura sobe em
+ *  minutos e os equipamentos desligam ou se danificam, muitas vezes sem que
+ *  ninguém perceba a tempo.
+ *
+ *  Entradas: sensor DHT22 (temperatura e umidade) e botão "Silenciar".
+ *  Saídas:   LEDs verde, amarelo e vermelho, buzzer, relé da ventilação de
+ *            emergência (com LED na carga) e LCD 16x2 I2C.
+ *
+ *  Lógica (três níveis, com base na faixa recomendada pela ASHRAE para
+ *  data centers, de 18 a 27 °C):
+ *    NORMAL  : 18 °C <= T <= 27 °C e umidade entre 20 % e 80 %
+ *    ATENÇÃO : T fora da faixa normal, umidade fora da faixa ou falha de
+ *              leitura do sensor (LED amarelo)
+ *    CRÍTICO : T > 32 °C (LED vermelho, buzzer intermitente e ventilação)
+ *  A ventilação de emergência desliga só quando T < 30 °C (histerese).
+ *  O botão silencia o buzzer do alarme atual. Se a situação piorar de novo
+ *  (voltar ao nível crítico depois de sair dele), o buzzer volta a tocar.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <DHT.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_DHT          = 2;
+const byte PINO_BOTAO        = 3;   // silenciar (INPUT_PULLUP)
+const byte PINO_RELE         = 7;   // ventilação de emergência
+const byte PINO_BUZZER       = 8;
+const byte PINO_LED_VERDE    = 9;
+const byte PINO_LED_AMARELO  = 10;
+const byte PINO_LED_VERMELHO = 11;
+
+DHT dht(PINO_DHT, DHT22);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const float T_MIN_NORMAL = 18.0;
+const float T_MAX_NORMAL = 27.0;
+const float T_CRITICA = 32.0;
+const float T_DESLIGA_VENTILACAO = 30.0;
+const float UR_MIN = 20.0, UR_MAX = 80.0;
+const unsigned long INTERVALO_LEITURA = 2000;  // o DHT22 aceita 1 leitura a cada 2 s
+const unsigned long PERIODO_BIPE = 1000;       // ms do ciclo liga/desliga do buzzer
+const unsigned long DEBOUNCE = 50;
+
+// ----------------------------- Estado --------------------------------------
+enum Nivel { NORMAL, ATENCAO, CRITICO };
+Nivel nivel = NORMAL;
+bool silenciado = false;
+bool ventilacaoLigada = false;
+float temperatura = NAN, umidade = NAN;
+unsigned long ultimaLeitura = 0;
+bool primeiraLeitura = true;
+bool buzzerTocando = false;
+
+int leituraAnterior = HIGH, estadoEstavel = HIGH;
+unsigned long ultimaMudanca = 0;
+
+bool botaoApertado() {
+  int leitura = digitalRead(PINO_BOTAO);
+  bool apertou = false;
+  if (leitura != leituraAnterior) ultimaMudanca = millis();
+  if (millis() - ultimaMudanca > DEBOUNCE && leitura != estadoEstavel) {
+    estadoEstavel = leitura;
+    if (estadoEstavel == LOW) apertou = true;
+  }
+  leituraAnterior = leitura;
+  return apertou;
+}
+
+// Classifica a leitura atual em um dos três níveis
+Nivel classificar(float t, float ur) {
+  if (isnan(t) || isnan(ur)) return ATENCAO;           // sensor sem resposta
+  if (t > T_CRITICA) return CRITICO;
+  if (t < T_MIN_NORMAL || t > T_MAX_NORMAL) return ATENCAO;
+  if (ur < UR_MIN || ur > UR_MAX) return ATENCAO;
+  return NORMAL;
+}
+
+const char *nomeNivel(Nivel n) {
+  return n == NORMAL ? "NORMAL" : n == ATENCAO ? "ATENCAO" : "CRITICO";
+}
+
+void atualizarSaidas() {
+  digitalWrite(PINO_LED_VERDE, nivel == NORMAL ? HIGH : LOW);
+  digitalWrite(PINO_LED_AMARELO, nivel == ATENCAO ? HIGH : LOW);
+  digitalWrite(PINO_LED_VERMELHO, nivel == CRITICO ? HIGH : LOW);
+
+  // Ventilação: liga no nível crítico e só desliga abaixo de 30 °C
+  if (nivel == CRITICO) ventilacaoLigada = true;
+  else if (!isnan(temperatura) && temperatura < T_DESLIGA_VENTILACAO) ventilacaoLigada = false;
+  digitalWrite(PINO_RELE, ventilacaoLigada ? HIGH : LOW);
+}
+
+void atualizarTela() {
+  char linha[17];
+  lcd.setCursor(0, 0);
+  if (isnan(temperatura)) {
+    lcd.print("Falha no sensor ");
+  } else {
+    lcd.print("T:");
+    lcd.print(temperatura, 1);
+    lcd.print("C UR:");
+    lcd.print(umidade, 0);
+    lcd.print("%   ");
+  }
+  snprintf(linha, sizeof(linha), "%-8s%s", nomeNivel(nivel),
+           ventilacaoLigada ? "VENT ON " : (silenciado ? "MUDO    " : "        "));
+  lcd.setCursor(0, 1);
+  lcd.print(linha);
+}
+
+void lerSensor() {
+  temperatura = dht.readTemperature();
+  umidade = dht.readHumidity();
+  Nivel novo = classificar(temperatura, umidade);
+  if (novo != nivel || primeiraLeitura) {
+    // Ao sair do nível crítico, o silêncio perde efeito para o próximo alarme
+    if (novo != CRITICO) silenciado = false;
+    Serial.print(F("[SERVIDORES] Nivel: "));
+    Serial.println(nomeNivel(novo));
+    nivel = novo;
+    primeiraLeitura = false;
+  }
+  atualizarSaidas();
+  atualizarTela();
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_RELE, OUTPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED_VERDE, OUTPUT);
+  pinMode(PINO_LED_AMARELO, OUTPUT);
+  pinMode(PINO_LED_VERMELHO, OUTPUT);
+  dht.begin();
+  lcd.init();
+  lcd.backlight();
+  lcd.print("Iniciando...");
+  ultimaLeitura = millis() - INTERVALO_LEITURA;  // lê logo no primeiro ciclo
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  if (agora - ultimaLeitura >= INTERVALO_LEITURA) {
+    ultimaLeitura = agora;
+    lerSensor();
+  }
+
+  if (botaoApertado() && nivel == CRITICO && !silenciado) {
+    silenciado = true;
+    Serial.println(F("[SERVIDORES] Alarme silenciado pelo operador"));
+    atualizarTela();
+  }
+
+  // Buzzer intermitente no nível crítico, enquanto não for silenciado
+  bool deveTocar = nivel == CRITICO && !silenciado && ((agora / (PERIODO_BIPE / 2)) % 2 == 0);
+  if (deveTocar != buzzerTocando) {   // só mexe no buzzer quando o estado muda
+    buzzerTocando = deveTocar;
+    if (deveTocar) tone(PINO_BUZZER, 2500);
+    else noTone(PINO_BUZZER);
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 5: Contador de pessoas e controle de lotação do auditório}\label{ap:a5}
+
+\noindent Projeto do Wokwi: pasta \simlink{a5-controle-lotacao} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C, Servo.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 5: Contador de pessoas e controle de
+ *  lotação do auditório
+ * ---------------------------------------------------------------------------
+ *  Problema: em treinamentos e eventos internos o auditório passa do limite
+ *  de pessoas definido pelo projeto de segurança contra incêndio, e ninguém
+ *  sabe quantas pessoas estão lá dentro em caso de evacuação.
+ *
+ *  Entradas: botão do sensor de entrada (pedido de passagem na catraca) e
+ *            botão do sensor de saída.
+ *  Saídas:   servo da catraca de entrada, LEDs verde, amarelo e vermelho,
+ *            buzzer e LCD 16x2 I2C com a ocupação.
+ *
+ *  Lógica:
+ *    - Entrada: se ocupação < capacidade, libera a catraca por 2 s e soma 1;
+ *      se estiver lotado, mantém a catraca travada e toca o aviso.
+ *    - Saída: subtrai 1 (nunca fica negativo).
+ *    - LED verde abaixo de 80 % da capacidade, amarelo a partir de 80 %,
+ *      vermelho quando lotado.
+ *  Capacidade reduzida para 8 pessoas na simulação.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <Servo.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_ENTRADA      = 2;   // botões ligados ao GND (INPUT_PULLUP)
+const byte PINO_SAIDA        = 3;
+const byte PINO_SERVO        = 6;
+const byte PINO_BUZZER       = 8;
+const byte PINO_LED_VERDE    = 9;
+const byte PINO_LED_AMARELO  = 10;
+const byte PINO_LED_VERMELHO = 11;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+Servo catraca;
+
+// ----------------------------- Parâmetros ----------------------------------
+const int CAPACIDADE = 8;
+const int PERCENTUAL_ALERTA = 80;
+const unsigned long TEMPO_CATRACA = 2000;  // ms com a catraca liberada
+const unsigned long DEBOUNCE = 50;
+const int ANGULO_TRAVADA = 0, ANGULO_LIVRE = 90;
+
+// ----------------------------- Estado --------------------------------------
+int ocupacao = 0;
+bool catracaLiberada = false;
+unsigned long inicioLiberacao = 0;
+
+// Botão com debounce e detecção de borda (uma estrutura por botão)
+struct Botao {
+  byte pino;
+  int leituraAnterior;
+  int estadoEstavel;
+  unsigned long ultimaMudanca;
+};
+Botao botaoEntrada = {PINO_ENTRADA, HIGH, HIGH, 0};
+Botao botaoSaida = {PINO_SAIDA, HIGH, HIGH, 0};
+
+bool foiApertado(Botao &b) {
+  int leitura = digitalRead(b.pino);
+  bool apertou = false;
+  if (leitura != b.leituraAnterior) b.ultimaMudanca = millis();
+  if (millis() - b.ultimaMudanca > DEBOUNCE && leitura != b.estadoEstavel) {
+    b.estadoEstavel = leitura;
+    if (b.estadoEstavel == LOW) apertou = true;
+  }
+  b.leituraAnterior = leitura;
+  return apertou;
+}
+
+void atualizarPainel() {
+  int percentual = ocupacao * 100 / CAPACIDADE;
+  bool lotado = ocupacao >= CAPACIDADE;
+  digitalWrite(PINO_LED_VERDE, percentual < PERCENTUAL_ALERTA ? HIGH : LOW);
+  digitalWrite(PINO_LED_AMARELO, !lotado && percentual >= PERCENTUAL_ALERTA ? HIGH : LOW);
+  digitalWrite(PINO_LED_VERMELHO, lotado ? HIGH : LOW);
+
+  char linha[17];
+  snprintf(linha, sizeof(linha), "Pessoas: %d/%d", ocupacao, CAPACIDADE);
+  lcd.setCursor(0, 0);
+  lcd.print(linha);
+  lcd.print("    ");
+  snprintf(linha, sizeof(linha), "%-16s", lotado ? "LOTADO" : percentual >= PERCENTUAL_ALERTA ? "Quase lotado" : "Entrada livre");
+  lcd.setCursor(0, 1);
+  lcd.print(linha);
+}
+
+void registrarEntrada() {
+  if (ocupacao >= CAPACIDADE) {
+    tone(PINO_BUZZER, 500, 700);  // aviso de lotação, catraca segue travada
+    Serial.println(F("[LOTACAO] Entrada negada: auditorio lotado"));
+    return;
+  }
+  ocupacao++;
+  catraca.write(ANGULO_LIVRE);
+  catracaLiberada = true;
+  inicioLiberacao = millis();
+  tone(PINO_BUZZER, 1500, 80);
+  Serial.print(F("[LOTACAO] Entrada. Ocupacao: "));
+  Serial.println(ocupacao);
+  atualizarPainel();
+}
+
+void registrarSaida() {
+  if (ocupacao == 0) {
+    Serial.println(F("[LOTACAO] Saida ignorada: contador ja em zero"));
+    return;
+  }
+  ocupacao--;
+  Serial.print(F("[LOTACAO] Saida. Ocupacao: "));
+  Serial.println(ocupacao);
+  atualizarPainel();
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_ENTRADA, INPUT_PULLUP);
+  pinMode(PINO_SAIDA, INPUT_PULLUP);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED_VERDE, OUTPUT);
+  pinMode(PINO_LED_AMARELO, OUTPUT);
+  pinMode(PINO_LED_VERMELHO, OUTPUT);
+  catraca.attach(PINO_SERVO);
+  catraca.write(ANGULO_TRAVADA);
+  lcd.init();
+  lcd.backlight();
+  atualizarPainel();
+}
+
+void loop() {
+  if (foiApertado(botaoEntrada)) registrarEntrada();
+  if (foiApertado(botaoSaida)) registrarSaida();
+
+  // Trava a catraca de novo depois do tempo de passagem
+  if (catracaLiberada && millis() - inicioLiberacao >= TEMPO_CATRACA) {
+    catracaLiberada = false;
+    catraca.write(ANGULO_TRAVADA);
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 6: Iluminação com aproveitamento da luz natural}\label{ap:a6}
+
+\noindent Projeto do Wokwi: pasta \simlink{a6-iluminacao-natural} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 6: Iluminação com aproveitamento da
+ *  luz natural (daylight harvesting)
+ * ---------------------------------------------------------------------------
+ *  Problema: as luminárias das estações de trabalho ficam em 100 % mesmo
+ *  com o sol entrando pela janela, gastando energia sem necessidade.
+ *
+ *  Entrada: sensor de luminosidade LDR (módulo com saída analógica).
+ *  Saídas:  luminária dimerizável (LED controlado por PWM) e LCD 16x2 I2C.
+ *
+ *  Lógica (controle proporcional):
+ *    - Converte a leitura do LDR em lux.
+ *    - A meta é 500 lux no plano de trabalho, valor da norma
+ *      ABNT NBR ISO/CIE 8995-1 para escritórios.
+ *    - A luminária completa só o que falta: potência = (500 - lux) / 500.
+ *    - Média móvel exponencial suaviza a leitura, e uma faixa morta de 2 %
+ *      evita que a luz fique "tremendo" com pequenas variações.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <math.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_LDR        = A0;
+const byte PINO_LUMINARIA  = 9;   // pino com PWM
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const float GAMMA = 0.7;             // constantes do LDR do Wokwi
+const float RL10 = 50;               // resistência (kΩ) a 10 lux
+const float META_LUX = 500.0;        // iluminância desejada (NBR ISO/CIE 8995-1)
+const float SUAVIZACAO = 0.2;        // peso da leitura nova na média móvel
+const int FAIXA_MORTA = 5;           // passos de PWM (cerca de 2 %)
+const unsigned long INTERVALO = 100; // ms entre leituras
+
+// ----------------------------- Estado --------------------------------------
+float luxSuavizado = -1;             // -1 indica que ainda não houve leitura
+int potenciaAtual = -1;              // 0 a 255
+unsigned long ultimaLeitura = 0;
+unsigned long ultimaTela = 0;
+
+// Converte a leitura analógica do módulo LDR em lux
+float lerLux() {
+  int leitura = analogRead(PINO_LDR);
+  leitura = constrain(leitura, 1, 1022);       // evita divisão por zero
+  float tensao = leitura / 1024.0 * 5.0;
+  float resistencia = 2000.0 * tensao / (1.0 - tensao / 5.0);
+  return pow(RL10 * 1e3 * pow(10, GAMMA) / resistencia, 1.0 / GAMMA);
+}
+
+// Calcula a potência da luminária (0 a 255) que completa a luz natural
+int calcularPotencia(float lux) {
+  if (lux >= META_LUX) return 0;               // luz natural já basta
+  float falta = (META_LUX - lux) / META_LUX;   // 0,0 a 1,0
+  return constrain((int)(falta * 255.0 + 0.5), 0, 255);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_LUMINARIA, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+}
+
+void loop() {
+  unsigned long agora = millis();
+  if (agora - ultimaLeitura < INTERVALO) return;
+  ultimaLeitura = agora;
+
+  float lux = lerLux();
+  // Média móvel exponencial: filtra variações rápidas (nuvem, sombra de pessoa)
+  if (luxSuavizado < 0) luxSuavizado = lux;
+  else luxSuavizado = SUAVIZACAO * lux + (1.0 - SUAVIZACAO) * luxSuavizado;
+
+  int potencia = calcularPotencia(luxSuavizado);
+  // Faixa morta: só ajusta a luminária quando a mudança é perceptível
+  if (potenciaAtual < 0 || abs(potencia - potenciaAtual) >= FAIXA_MORTA ||
+      (potencia == 0 && potenciaAtual != 0) || (potencia == 255 && potenciaAtual != 255)) {
+    potenciaAtual = potencia;
+    analogWrite(PINO_LUMINARIA, potenciaAtual);
+    Serial.print(F("[LUZ] Natural: "));
+    Serial.print(luxSuavizado, 0);
+    Serial.print(F(" lux | Luminaria: "));
+    Serial.print(potenciaAtual * 100 / 255);
+    Serial.println(F(" %"));
+  }
+
+  if (agora - ultimaTela >= 500) {
+    ultimaTela = agora;
+    lcd.setCursor(0, 0);
+    lcd.print("Natural:");
+    lcd.print(luxSuavizado > 9999 ? 9999 : (int)luxSuavizado);
+    lcd.print(" lx    ");
+    lcd.setCursor(0, 1);
+    lcd.print("Luminaria: ");
+    lcd.print(potenciaAtual * 100 / 255);
+    lcd.print("%   ");
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 7: Detecção de vazamento de gás na copa}\label{ap:a7}
+
+\noindent Projeto do Wokwi: pasta \simlink{a7-vazamento-gas} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): Servo.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 7: Detecção de vazamento de gás na copa
+ * ---------------------------------------------------------------------------
+ *  Problema: a copa do escritório tem fogão ou aquecedor a gás. Um vazamento
+ *  fora do horário de uso pode passar despercebido e provocar incêndio.
+ *
+ *  Entradas: sensor de gás MQ-2 (saídas analógica AOUT e digital DOUT) e
+ *            botão "Rearmar".
+ *  Saídas:   servo da válvula de gás, relé do exaustor (com LED na carga),
+ *            LED vermelho e buzzer.
+ *
+ *  Lógica:
+ *    - Nos primeiros 3 s o sistema mede o ar limpo (linha de base).
+ *    - Alarme se a leitura analógica passar da linha de base + 150
+ *      OU se a saída digital do módulo for a nível baixo (redundância).
+ *    - No alarme: fecha a válvula, liga o exaustor, LED pisca e sirene toca.
+ *    - O alarme fica travado (latch). Só é rearmado pelo botão e somente
+ *      quando o gás já voltou a um nível seguro (linha de base + 75).
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Servo.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_GAS_ANALOG  = A0;
+const byte PINO_GAS_DIGITAL = 4;
+const byte PINO_BOTAO       = 3;   // rearmar (INPUT_PULLUP)
+const byte PINO_VALVULA     = 6;
+const byte PINO_EXAUSTOR    = 7;
+const byte PINO_BUZZER      = 8;
+const byte PINO_LED_ALARME  = 9;
+
+Servo valvula;
+
+// ----------------------------- Parâmetros ----------------------------------
+const unsigned long TEMPO_CALIBRACAO = 3000;  // ms medindo o ar limpo
+const int MARGEM_ALARME = 150;                // acima da linha de base
+const int MARGEM_SEGURA = 75;                 // nível para permitir o rearme
+const int ANGULO_ABERTA = 0, ANGULO_FECHADA = 90;
+const unsigned long DEBOUNCE = 50;
+
+// ----------------------------- Estado --------------------------------------
+enum Estado { CALIBRANDO, MONITORANDO, ALARME };
+Estado estado = CALIBRANDO;
+unsigned long inicioCalibracao = 0;
+long somaCalibracao = 0;
+int amostrasCalibracao = 0;
+int linhaDeBase = 0;
+unsigned long ultimoLog = 0;
+int faseSirene = -1;   // -1 força a primeira troca de tom ao entrar em alarme
+
+int leituraAnterior = HIGH, estadoEstavel = HIGH;
+unsigned long ultimaMudanca = 0;
+
+bool botaoApertado() {
+  int leitura = digitalRead(PINO_BOTAO);
+  bool apertou = false;
+  if (leitura != leituraAnterior) ultimaMudanca = millis();
+  if (millis() - ultimaMudanca > DEBOUNCE && leitura != estadoEstavel) {
+    estadoEstavel = leitura;
+    if (estadoEstavel == LOW) apertou = true;
+  }
+  leituraAnterior = leitura;
+  return apertou;
+}
+
+void dispararAlarme(int leitura) {
+  estado = ALARME;
+  faseSirene = -1;
+  valvula.write(ANGULO_FECHADA);
+  digitalWrite(PINO_EXAUSTOR, HIGH);
+  Serial.print(F("[GAS] ALARME! Leitura "));
+  Serial.print(leitura);
+  Serial.print(F(" (base "));
+  Serial.print(linhaDeBase);
+  Serial.println(F("). Valvula fechada e exaustor ligado"));
+}
+
+void rearmar() {
+  estado = MONITORANDO;
+  valvula.write(ANGULO_ABERTA);
+  digitalWrite(PINO_EXAUSTOR, LOW);
+  digitalWrite(PINO_LED_ALARME, LOW);
+  noTone(PINO_BUZZER);
+  Serial.println(F("[GAS] Sistema rearmado: valvula aberta"));
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_GAS_DIGITAL, INPUT);
+  pinMode(PINO_BOTAO, INPUT_PULLUP);
+  pinMode(PINO_EXAUSTOR, OUTPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED_ALARME, OUTPUT);
+  valvula.attach(PINO_VALVULA);
+  valvula.write(ANGULO_ABERTA);
+  inicioCalibracao = millis();
+  Serial.println(F("[GAS] Calibrando com ar limpo..."));
+}
+
+void loop() {
+  unsigned long agora = millis();
+  int leitura = analogRead(PINO_GAS_ANALOG);
+  bool digitalAcusou = digitalRead(PINO_GAS_DIGITAL) == LOW;
+  bool apertou = botaoApertado();
+
+  switch (estado) {
+    case CALIBRANDO:
+      somaCalibracao += leitura;
+      amostrasCalibracao++;
+      digitalWrite(PINO_LED_ALARME, (agora / 250) % 2);  // pisca rápido calibrando
+      if (agora - inicioCalibracao >= TEMPO_CALIBRACAO) {
+        linhaDeBase = somaCalibracao / amostrasCalibracao;
+        estado = MONITORANDO;
+        digitalWrite(PINO_LED_ALARME, LOW);
+        Serial.print(F("[GAS] Linha de base: "));
+        Serial.println(linhaDeBase);
+      }
+      break;
+
+    case MONITORANDO:
+      if (leitura > linhaDeBase + MARGEM_ALARME || digitalAcusou) dispararAlarme(leitura);
+      break;
+
+    case ALARME: {
+      // Sirene de dois tons e LED piscando, alternando a cada 300 ms
+      int fase = (agora / 300) % 2;
+      if (fase != faseSirene) {          // troca o tom só na virada da fase
+        faseSirene = fase;
+        digitalWrite(PINO_LED_ALARME, fase ? HIGH : LOW);
+        tone(PINO_BUZZER, fase ? 2000 : 1400);
+      }
+      if (apertou) {
+        if (leitura <= linhaDeBase + MARGEM_SEGURA && !digitalAcusou) rearmar();
+        else Serial.println(F("[GAS] Rearme recusado: gas ainda acima do nivel seguro"));
+      }
+      break;
+    }
+  }
+
+  if (estado != CALIBRANDO && agora - ultimoLog >= 2000) {  // registro periódico
+    ultimoLog = agora;
+    Serial.print(F("[GAS] Leitura: "));
+    Serial.println(leitura);
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 8: Nível do reservatório e bomba de recalque}\label{ap:a8}
+
+\noindent Projeto do Wokwi: pasta \simlink{a8-reservatorio-agua} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 8: Nível do reservatório superior e
+ *  bomba de recalque
+ * ---------------------------------------------------------------------------
+ *  Problema: a caixa d'água que abastece banheiros e copa esvazia sem aviso,
+ *  ou a bomba fica ligada com a caixa cheia (transbordando) ou trabalhando a
+ *  seco quando o sensor falha.
+ *
+ *  Entrada: sensor ultrassônico HC-SR04 instalado na tampa do reservatório.
+ *  Saídas:  relé da bomba de recalque (com LED na carga), barra de 4 LEDs de
+ *           nível, buzzer e LCD 16x2 I2C.
+ *
+ *  Lógica:
+ *    - Mede a distância até a água (mediana de 3 leituras) e converte em %:
+ *      20 cm da tampa = 100 % e 220 cm = 0 %.
+ *    - Bomba liga abaixo de 25 % e só desliga ao chegar a 90 % (histerese,
+ *      que evita a bomba ligando e desligando a todo momento).
+ *    - Abaixo de 10 %: alarme de reserva crítica (bipe a cada 2 s).
+ *    - Se o sensor não responder, a bomba é desligada por segurança e o
+ *      visor mostra a falha.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_TRIG   = 12;
+const byte PINO_ECHO   = 13;
+const byte PINO_BOMBA  = 7;
+const byte PINO_BUZZER = 8;
+const byte PINOS_BARRA[4] = {2, 3, 4, 5};  // 25 %, 50 %, 75 %, 100 %
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const float DIST_CHEIO = 20.0;    // cm do sensor até a água com a caixa cheia
+const float DIST_VAZIO = 220.0;   // cm do sensor até o fundo
+const int LIGA_BOMBA = 25;        // %
+const int DESLIGA_BOMBA = 90;     // %
+const int NIVEL_CRITICO = 10;     // %
+const unsigned long INTERVALO = 500;
+const unsigned long TIMEOUT_ECO = 30000;  // µs (cerca de 5 m de alcance)
+
+// ----------------------------- Estado --------------------------------------
+bool bombaLigada = false;
+bool sensorComFalha = false;
+int nivel = -1;
+unsigned long ultimaMedicao = 0;
+unsigned long ultimoBipe = 0;
+
+// Dispara o HC-SR04 e devolve a distância em cm (ou -1 se não houve eco)
+float medirDistancia() {
+  digitalWrite(PINO_TRIG, LOW);
+  delayMicroseconds(2);
+  digitalWrite(PINO_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PINO_TRIG, LOW);
+  unsigned long duracao = pulseIn(PINO_ECHO, HIGH, TIMEOUT_ECO);
+  if (duracao == 0) return -1;
+  return duracao / 58.0;  // ida e volta do som a cerca de 343 m/s
+}
+
+// Mediana de três medidas: descarta um eco espúrio isolado
+float medirDistanciaFiltrada() {
+  float a = medirDistancia(), b = medirDistancia(), c = medirDistancia();
+  if (a < 0 || b < 0 || c < 0) return -1;
+  if ((a <= b && b <= c) || (c <= b && b <= a)) return b;
+  if ((b <= a && a <= c) || (c <= a && a <= b)) return a;
+  return c;
+}
+
+int distanciaParaNivel(float distancia) {
+  float pct = (DIST_VAZIO - distancia) * 100.0 / (DIST_VAZIO - DIST_CHEIO);
+  return constrain((int)(pct + 0.5), 0, 100);
+}
+
+void acionarBomba(bool ligar) {
+  if (ligar == bombaLigada) return;
+  bombaLigada = ligar;
+  digitalWrite(PINO_BOMBA, ligar ? HIGH : LOW);
+  Serial.println(ligar ? F("[AGUA] Bomba LIGADA") : F("[AGUA] Bomba DESLIGADA"));
+}
+
+void atualizarBarra() {
+  for (byte i = 0; i < 4; i++) {
+    bool aceso = !sensorComFalha && nivel >= (i + 1) * 25 - 12;  // arredonda ao quarto mais próximo
+    digitalWrite(PINOS_BARRA[i], aceso ? HIGH : LOW);
+  }
+}
+
+void atualizarTela() {
+  char linha[17];
+  lcd.setCursor(0, 0);
+  if (sensorComFalha) snprintf(linha, sizeof(linha), "%-16s", "FALHA NO SENSOR");
+  else snprintf(linha, sizeof(linha), "Nivel: %3d%%     ", nivel);
+  lcd.print(linha);
+  lcd.setCursor(0, 1);
+  const char *situacao = sensorComFalha ? "Bomba bloqueada" : bombaLigada ? "Bomba LIGADA" : "Bomba desligada";
+  snprintf(linha, sizeof(linha), "%-16s", situacao);
+  lcd.print(linha);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_TRIG, OUTPUT);
+  pinMode(PINO_ECHO, INPUT);
+  pinMode(PINO_BOMBA, OUTPUT);
+  pinMode(PINO_BUZZER, OUTPUT);
+  for (byte i = 0; i < 4; i++) pinMode(PINOS_BARRA[i], OUTPUT);
+  lcd.init();
+  lcd.backlight();
+}
+
+void loop() {
+  unsigned long agora = millis();
+  if (agora - ultimaMedicao < INTERVALO) return;
+  ultimaMedicao = agora;
+
+  float distancia = medirDistanciaFiltrada();
+  bool falhaAntes = sensorComFalha;
+  sensorComFalha = distancia < 0;
+
+  if (sensorComFalha) {
+    acionarBomba(false);               // nunca bombear "às cegas"
+    if (!falhaAntes) Serial.println(F("[AGUA] Sensor sem resposta"));
+  } else {
+    nivel = distanciaParaNivel(distancia);
+    if (nivel < LIGA_BOMBA) acionarBomba(true);
+    else if (nivel >= DESLIGA_BOMBA) acionarBomba(false);
+    // entre 25 % e 90 % a bomba mantém o estado anterior (histerese)
+  }
+
+  // Alarme de reserva crítica ou de falha: bipe curto a cada 2 s
+  bool alarme = sensorComFalha || nivel < NIVEL_CRITICO;
+  if (alarme && agora - ultimoBipe >= 2000) {
+    ultimoBipe = agora;
+    tone(PINO_BUZZER, 1000, 150);
+  }
+
+  atualizarBarra();
+  atualizarTela();
+
+  static int nivelRegistrado = -1;
+  if (!sensorComFalha && nivel != nivelRegistrado) {
+    nivelRegistrado = nivel;
+    Serial.print(F("[AGUA] Distancia: "));
+    Serial.print(distancia, 1);
+    Serial.print(F(" cm | Nivel: "));
+    Serial.print(nivel);
+    Serial.println(F(" %"));
+  }
+}
+\end{lstlisting}
+
+\section{Código da Automação 9: Painel de senhas da recepção com atendimento preferencial}\label{ap:a9}
+
+\noindent Projeto do Wokwi: pasta \simlink{a9-painel-senhas} do repositório.
+
+\noindent Bibliotecas (arquivo \texttt{libraries.txt} do projeto): LiquidCrystal I2C.
+
+\begin{lstlisting}[language=C++]
+/*
+ * ===========================================================================
+ *  Escritório Inteligente | Automação 9: Painel de senhas da recepção com
+ *  atendimento preferencial
+ * ---------------------------------------------------------------------------
+ *  Problema: na recepção, visitantes e fornecedores formam fila sem ordem
+ *  definida, e o atendimento preferencial (idosos, gestantes, pessoas com
+ *  deficiência) fica a critério de quem está no balcão.
+ *
+ *  Entradas: botão "Senha normal", botão "Senha preferencial" (totem) e
+ *            botão "Chamar próximo" (balcão da recepção).
+ *  Saídas:   LCD 16x2 I2C (painel), buzzer (aviso de chamada) e LED
+ *            "Chamando".
+ *
+ *  Lógica (duas filas com prioridade):
+ *    - Cada botão do totem emite uma senha: N001, N002... ou P001, P002...
+ *    - "Chamar próximo" dá prioridade à fila preferencial, mas depois de
+ *      2 preferenciais seguidas chama 1 normal, se houver alguém esperando.
+ *      Assim a fila normal nunca fica parada indefinidamente.
+ *    - Fila vazia: o painel avisa e nada é chamado.
+ *    - Cada fila guarda até 20 senhas aguardando.
+ *
+ *  Plataforma: Arduino Uno (ATmega328P), simulado no Wokwi.
+ * ===========================================================================
+ */
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// ----------------------------- Pinos ---------------------------------------
+const byte PINO_NORMAL       = 2;   // botões ligados ao GND (INPUT_PULLUP)
+const byte PINO_PREFERENCIAL = 3;
+const byte PINO_CHAMAR       = 4;
+const byte PINO_BUZZER       = 8;
+const byte PINO_LED_CHAMANDO = 9;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// ----------------------------- Parâmetros ----------------------------------
+const byte MAX_PREFERENCIAIS_SEGUIDAS = 2;
+const int LIMITE_FILA = 20;
+const unsigned long TEMPO_LED = 3000;
+const unsigned long DEBOUNCE = 50;
+
+// ----------------------------- Estado --------------------------------------
+// Cada fila é controlada por dois contadores: senhas emitidas e chamadas.
+// Quem aguarda = emitidas - chamadas.
+int emitidasNormal = 0, chamadasNormal = 0;
+int emitidasPref = 0, chamadasPref = 0;
+byte preferenciaisSeguidas = 0;
+char ultimaChamada[6] = "----";
+unsigned long inicioChamada = 0;
+bool ledChamando = false;
+
+struct Botao {
+  byte pino;
+  int leituraAnterior;
+  int estadoEstavel;
+  unsigned long ultimaMudanca;
+};
+Botao botaoNormal = {PINO_NORMAL, HIGH, HIGH, 0};
+Botao botaoPref = {PINO_PREFERENCIAL, HIGH, HIGH, 0};
+Botao botaoChamar = {PINO_CHAMAR, HIGH, HIGH, 0};
+
+bool foiApertado(Botao &b) {
+  int leitura = digitalRead(b.pino);
+  bool apertou = false;
+  if (leitura != b.leituraAnterior) b.ultimaMudanca = millis();
+  if (millis() - b.ultimaMudanca > DEBOUNCE && leitura != b.estadoEstavel) {
+    b.estadoEstavel = leitura;
+    if (b.estadoEstavel == LOW) apertou = true;
+  }
+  b.leituraAnterior = leitura;
+  return apertou;
+}
+
+int aguardandoNormal() { return emitidasNormal - chamadasNormal; }
+int aguardandoPref() { return emitidasPref - chamadasPref; }
+
+void atualizarPainel(const char *mensagem) {
+  char linha[17];
+  snprintf(linha, sizeof(linha), "Senha: %-9s", ultimaChamada);
+  lcd.setCursor(0, 0);
+  lcd.print(linha);
+  if (mensagem) snprintf(linha, sizeof(linha), "%-16s", mensagem);
+  else snprintf(linha, sizeof(linha), "Fila N:%-2d P:%-2d  ", aguardandoNormal(), aguardandoPref());
+  lcd.setCursor(0, 1);
+  lcd.print(linha);
+}
+
+void emitirSenha(bool preferencial) {
+  if ((preferencial ? aguardandoPref() : aguardandoNormal()) >= LIMITE_FILA) {
+    tone(PINO_BUZZER, 300, 300);
+    atualizarPainel("Fila cheia");
+    return;
+  }
+  char senha[6];
+  if (preferencial) snprintf(senha, sizeof(senha), "P%03d", ++emitidasPref);
+  else snprintf(senha, sizeof(senha), "N%03d", ++emitidasNormal);
+  tone(PINO_BUZZER, 1500, 60);
+  Serial.print(F("[RECEPCAO] Senha emitida: "));
+  Serial.println(senha);
+  atualizarPainel(NULL);
+}
+
+// Decide qual fila atende agora e chama a próxima senha
+void chamarProximo() {
+  bool temNormal = aguardandoNormal() > 0;
+  bool temPref = aguardandoPref() > 0;
+  if (!temNormal && !temPref) {
+    tone(PINO_BUZZER, 300, 200);
+    atualizarPainel("Fila vazia");
+    Serial.println(F("[RECEPCAO] Nenhuma senha aguardando"));
+    return;
+  }
+  bool chamarPreferencial = temPref &&
+      (preferenciaisSeguidas < MAX_PREFERENCIAIS_SEGUIDAS || !temNormal);
+
+  if (chamarPreferencial) {
+    chamadasPref++;
+    preferenciaisSeguidas++;
+    snprintf(ultimaChamada, sizeof(ultimaChamada), "P%03d", chamadasPref);
+  } else {
+    chamadasNormal++;
+    preferenciaisSeguidas = 0;
+    snprintf(ultimaChamada, sizeof(ultimaChamada), "N%03d", chamadasNormal);
+  }
+
+  // "Plim-plom" de chamada e LED aceso por 3 s
+  tone(PINO_BUZZER, 1319, 250);
+  delay(260);
+  tone(PINO_BUZZER, 988, 350);
+  digitalWrite(PINO_LED_CHAMANDO, HIGH);
+  ledChamando = true;
+  inicioChamada = millis();
+
+  Serial.print(F("[RECEPCAO] Chamando: "));
+  Serial.println(ultimaChamada);
+  atualizarPainel(NULL);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(PINO_NORMAL, INPUT_PULLUP);
+  pinMode(PINO_PREFERENCIAL, INPUT_PULLUP);
+  pinMode(PINO_CHAMAR, INPUT_PULLUP);
+  pinMode(PINO_BUZZER, OUTPUT);
+  pinMode(PINO_LED_CHAMANDO, OUTPUT);
+  lcd.init();
+  lcd.backlight();
+  atualizarPainel(NULL);
+}
+
+void loop() {
+  if (foiApertado(botaoNormal)) emitirSenha(false);
+  if (foiApertado(botaoPref)) emitirSenha(true);
+  if (foiApertado(botaoChamar)) chamarProximo();
+
+  if (ledChamando && millis() - inicioChamada >= TEMPO_LED) {
+    ledChamando = false;
+    digitalWrite(PINO_LED_CHAMANDO, LOW);
+  }
+}
+\end{lstlisting}
+
+\end{document}

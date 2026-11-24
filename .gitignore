@@ -1,0 +1,16 @@
+# Compilação e dependências baixadas pelos scripts
+build/
+.deps/
+node_modules/
+__pycache__/
+
+# Arquivos temporários do LaTeX
+artigo/*.aux
+artigo/*.bbl
+artigo/*.blg
+artigo/*.fls
+artigo/*.fdb_latexmk
+artigo/*.log
+artigo/*.out
+artigo/*.synctex.gz
+artigo/main.pdf

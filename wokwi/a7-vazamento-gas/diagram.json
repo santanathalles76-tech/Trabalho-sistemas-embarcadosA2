@@ -1,0 +1,219 @@
+{
+  "version": 1,
+  "author": "Thalles da Silva Santana",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-gas-sensor",
+      "id": "gas1",
+      "top": -80,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 60,
+      "left": 330,
+      "attrs": {
+        "color": "black"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -230,
+      "left": -10,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-relay-module",
+      "id": "relay1",
+      "top": 150,
+      "left": 330,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledcarga",
+      "top": 140,
+      "left": 480,
+      "attrs": {
+        "color": "cyan",
+        "label": "Carga"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rcarga",
+      "top": 215,
+      "left": 475,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 90,
+      "left": -230,
+      "attrs": {
+        "volume": "0.1"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led1",
+      "top": -60,
+      "left": -120,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 15,
+      "left": -125,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "gas1:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "gas1:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "gas1:AOUT",
+      "uno:A0",
+      "green",
+      []
+    ],
+    [
+      "gas1:DOUT",
+      "uno:4",
+      "blue",
+      []
+    ],
+    [
+      "btn1:1.l",
+      "uno:3",
+      "green",
+      []
+    ],
+    [
+      "btn1:2.r",
+      "uno:GND.3",
+      "black",
+      []
+    ],
+    [
+      "servo1:GND",
+      "uno:GND.1",
+      "black",
+      []
+    ],
+    [
+      "servo1:V+",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "servo1:PWM",
+      "uno:6",
+      "orange",
+      []
+    ],
+    [
+      "relay1:VCC",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "relay1:GND",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "relay1:IN",
+      "uno:7",
+      "green",
+      []
+    ],
+    [
+      "relay1:COM",
+      "uno:5V",
+      "red",
+      []
+    ],
+    [
+      "relay1:NO",
+      "ledcarga:A",
+      "orange",
+      []
+    ],
+    [
+      "ledcarga:C",
+      "rcarga:1",
+      "gray",
+      []
+    ],
+    [
+      "rcarga:2",
+      "uno:GND.2",
+      "black",
+      []
+    ],
+    [
+      "bz1:1",
+      "uno:GND.3",
+      "black",
+      []
+    ],
+    [
+      "bz1:2",
+      "uno:8",
+      "orange",
+      []
+    ],
+    [
+      "uno:9",
+      "led1:A",
+      "green",
+      []
+    ],
+    [
+      "led1:C",
+      "r1:1",
+      "gray",
+      []
+    ],
+    [
+      "r1:2",
+      "uno:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

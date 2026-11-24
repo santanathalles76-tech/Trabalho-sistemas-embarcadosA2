@@ -1,0 +1,5 @@
+# Configuração para a extensão Wokwi for VS Code
+[wokwi]
+version = 1
+firmware = 'sketch.hex'
+elf = 'sketch.elf'
